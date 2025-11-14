@@ -1,0 +1,33 @@
+# IDE files
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+
+# Build files
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Local configuration
+local.properties
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services (if you have them)
+google-services.json
+
+# APKs and AABs
+*.apk
+*.aab
+
+# Log files
+*.log
+
+# Test results
+/app/build/reports
+/app/build/test-results
