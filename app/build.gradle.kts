@@ -56,6 +56,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // CameraX
     implementation(libs.androidx.camera.camera2)

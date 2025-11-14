@@ -2,7 +2,8 @@ package com.amehran.bemyeyes.presentation.ui.navigation
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.amehran.bemyeyes.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -26,13 +27,12 @@ class NavigationTest {
 
     @Test
     fun cameraScreen_isDisplayed_afterSplashScreen() {
-        // Wait until the camera screen is visible
+        // Wait until the camera preview is visible
         composeTestRule.waitUntil(timeoutMillis = 3000) {
-            // Check if a node with the text "Camera Screen" exists
-            composeTestRule.onAllNodesWithText("Camera Screen").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithTag("camera_preview").fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Assert that the camera screen is displayed
-        composeTestRule.onNodeWithText("Camera Screen").assertIsDisplayed()
+        // Assert that the camera preview is displayed
+        composeTestRule.onNodeWithTag("camera_preview").assertIsDisplayed()
     }
 }
