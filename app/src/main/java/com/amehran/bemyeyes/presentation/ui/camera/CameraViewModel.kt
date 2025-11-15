@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.amehran.bemyeyes.domain.model.Detection
 import com.amehran.bemyeyes.domain.repository.ObjectDetector
+import com.amehran.bemyeyes.domain.repository.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    private val objectDetector: ObjectDetector
+    private val objectDetector: ObjectDetector,
+    private val textToSpeechManager: TextToSpeechManager
 ) : ViewModel() {
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
@@ -22,7 +24,15 @@ class CameraViewModel @Inject constructor(
 
     fun detect(bitmap: Bitmap) {
         objectDetector.detect(bitmap)
-            .onEach { _detections.value = it }
+            .onEach { detections ->
+                _detections.value = detections
+                detections.firstOrNull()?.let { textToSpeechManager.speak(it.label) }
+            }
             .launchIn(viewModelScope)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        textToSpeechManager.shutdown()
     }
 }
