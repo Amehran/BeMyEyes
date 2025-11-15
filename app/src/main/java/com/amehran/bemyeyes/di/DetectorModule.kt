@@ -19,6 +19,10 @@ object DetectorModule {
     fun provideObjectDetector(
         @ApplicationContext context: Context
     ): ObjectDetector {
-        return TfLiteObjectDetector(context)
+        return TfLiteObjectDetector(
+            context = context,
+            modelPath = "efficientdet-lite4.tflite",
+            confidenceThreshold = 0.5f
+        )
     }
 }

@@ -14,8 +14,8 @@ import org.tensorflow.lite.task.vision.detector.ObjectDetector as TfLiteTaskDete
 
 class TfLiteObjectDetector(
     private val context: Context,
-    private val modelPath: String = "model.tflite",
-    private val confidenceThreshold: Float = 0.55f // A better threshold for EfficientDet
+    private val modelPath: String = "efficientdet-lite4.tflite",
+    private val confidenceThreshold: Float = 0.5f
 ) : ObjectDetector {
 
     private val objectDetector: TfLiteTaskDetector
@@ -31,9 +31,9 @@ class TfLiteObjectDetector(
             .build()
         objectDetector = TfLiteTaskDetector.createFromFileAndOptions(context, modelPath, options)
 
-        // Set for EfficientDet-Lite1
-        val modelInputWidth = 384
-        val modelInputHeight = 384
+        // Set for EfficientDet-Lite4
+        val modelInputWidth = 640
+        val modelInputHeight = 640
         imageProcessor = ImageProcessor.Builder()
             .add(ResizeOp(modelInputHeight, modelInputWidth, ResizeOp.ResizeMethod.BILINEAR))
             .build()
@@ -47,9 +47,18 @@ class TfLiteObjectDetector(
 
         val detections = results.mapNotNull { detectionResult ->
             detectionResult.categories.firstOrNull()?.let {
-                Detection(it.label, it.score)
+                Detection(label = it.label, confidence = it.score)
             }
         }
-        emit(detections)
+
+        val uniqueDetectionsMap = mutableMapOf<String, Detection>()
+        for (detection in detections) {
+            val existing = uniqueDetectionsMap[detection.label]
+            if (existing == null || detection.confidence > existing.confidence) {
+                uniqueDetectionsMap[detection.label] = detection
+            }
+        }
+
+        emit(uniqueDetectionsMap.values.toList())
     }
 }
