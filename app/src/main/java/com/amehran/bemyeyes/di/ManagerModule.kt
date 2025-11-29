@@ -21,4 +21,12 @@ object ManagerModule {
     ): TextToSpeechManager {
         return AndroidTextToSpeechManager(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideVibrationManager(
+        @ApplicationContext context: Context
+    ): com.amehran.bemyeyes.domain.repository.VibrationManager {
+        return com.amehran.bemyeyes.data.repository.SystemVibrationManager(context)
+    }
 }

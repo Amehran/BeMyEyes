@@ -5,5 +5,5 @@ import com.amehran.bemyeyes.domain.model.Detection
 import kotlinx.coroutines.flow.Flow
 
 interface ObjectDetector {
-    fun detect(bitmap: Bitmap): Flow<List<Detection>>
+    suspend fun detect(bitmap: Bitmap): List<Detection>
 }

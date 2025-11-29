@@ -41,7 +41,7 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
     val detections by viewModel.detections.collectAsState()
 
     if (detections.isNotEmpty()) {
-        val detectionText = detections.joinToString { it.label }
+        val detectionText = detections.joinToString { it.getDescription() }
         Toast.makeText(context, detectionText, Toast.LENGTH_SHORT).show()
     }
 
