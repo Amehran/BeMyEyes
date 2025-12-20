@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.amehran.bemyeyes.domain.model.Detection
 import com.amehran.bemyeyes.domain.repository.ObjectDetector
 import com.amehran.bemyeyes.domain.repository.TextToSpeechManager
+import com.amehran.bemyeyes.domain.repository.VibrationManager
 import com.amehran.bemyeyes.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -16,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 @ExperimentalCoroutinesApi
 class CameraViewModelTest {
@@ -25,7 +27,7 @@ class CameraViewModelTest {
 
     private val objectDetector: ObjectDetector = mockk(relaxed = true)
     private val textToSpeechManager: TextToSpeechManager = mockk(relaxed = true)
-    private val vibrationManager: com.amehran.bemyeyes.domain.repository.VibrationManager = mockk(relaxed = true)
+    private val vibrationManager: VibrationManager = mockk(relaxed = true)
     private lateinit var viewModel: CameraViewModel
 
     @Before
@@ -108,5 +110,38 @@ class CameraViewModelTest {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `should prevent repetitive audio for same object even if interleaved with others`() = runBlocking {
+        // This test simulates the "Flip-Flop" bug where seeing B resets the timer for A.
+        
+        // Setup Mocks
+        val bitmap: Bitmap = mockk()
+        val rect = mockk<android.graphics.RectF>()
+        io.mockk.every { rect.centerX() } returns 160f
+        io.mockk.every { rect.height() } returns 160f
+        
+        val chair = Detection("chair", 0.9f, rect)
+        val table = Detection("table", 0.9f, rect)
+
+        // 1. Detect CHAIR
+        coEvery { objectDetector.detect(any()) } returns listOf(chair)
+        viewModel.detect(bitmap)
+        verify(exactly = 1) { textToSpeechManager.speak(match { it.contains("chair") }) }
+
+        // 2. Detect TABLE
+        coEvery { objectDetector.detect(any()) } returns listOf(table)
+        viewModel.detect(bitmap)
+        verify(exactly = 1) { textToSpeechManager.speak(match { it.contains("table") }) }
+
+        // 3. Detect CHAIR again (Immediately)
+        // DESIRED BEHAVIOR: Silence (Cooldown hasn't passed for Chair)
+        // CURRENT BUG: Speak (Because "Chair" != "Table")
+        coEvery { objectDetector.detect(any()) } returns listOf(chair)
+        viewModel.detect(bitmap)
+        
+        // We expect verify call count for "chair" to remain 1, NOT 2
+        verify(exactly = 1) { textToSpeechManager.speak(match { it.contains("chair") }) }
     }
 }

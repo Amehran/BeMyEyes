@@ -26,8 +26,7 @@ class CameraViewModel @Inject constructor(
     val detections = _detections.asStateFlow()
 
     private var isProcessing = false
-    private var lastSpokenMessage: String? = null
-    private var lastSpokenTime: Long = 0
+    private val lastSpokenTimestamp = mutableMapOf<String, Long>()
     private val spamCooldownMs = 4000L // Don't repeat same message for 4 seconds
 
     fun detect(bitmap: Bitmap) {
@@ -49,17 +48,19 @@ class CameraViewModel @Inject constructor(
                 bestDetection?.let { detection ->
                     val message = detection.getDescription()
                     val currentTime = System.currentTimeMillis()
+                    val label = detection.label
+                    
+                    val lastTimeForThisObject = lastSpokenTimestamp[label] ?: 0L
 
-                    // Speak if it's a new message OR if enough time has passed for the same message
-                    if (message != lastSpokenMessage || (currentTime - lastSpokenTime) > spamCooldownMs) {
+                    // Speak if enough time has passed for THIS specific object
+                    if ((currentTime - lastTimeForThisObject) > spamCooldownMs) {
                         textToSpeechManager.speak(message)
                         
-                        if (isUrgent(detection.label)) {
+                        if (isUrgent(label)) {
                             vibrationManager.vibrateCaution()
                         }
 
-                        lastSpokenMessage = message
-                        lastSpokenTime = currentTime
+                        lastSpokenTimestamp[label] = currentTime
                     }
                 }
             } finally {
