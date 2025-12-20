@@ -19,10 +19,10 @@ object DetectorModule {
     fun provideObjectDetector(
         @ApplicationContext context: Context
     ): ObjectDetector {
-        return TfLiteObjectDetector(
+        return com.amehran.bemyeyes.data.repository.MediaPipeObjectDetector(
             context = context,
-            modelPath = "efficientdet-lite4.tflite",
-            confidenceThreshold = 0.5f
+            modelPath = "efficientdet-lite0.tflite", // Use Lite0 for better speed/smoothing balance
+            confidenceThreshold = 0.5f // MediaPipe is robust, 0.5 is safe
         )
     }
 }

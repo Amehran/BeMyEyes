@@ -29,4 +29,10 @@ object TestAppModule {
         // Provide a mock for the tests
         return mockk(relaxed = true)
     }
+
+    @Provides
+    @Singleton
+    fun provideVibrationManager(): com.amehran.bemyeyes.domain.repository.VibrationManager {
+        return mockk(relaxed = true)
+    }
 }

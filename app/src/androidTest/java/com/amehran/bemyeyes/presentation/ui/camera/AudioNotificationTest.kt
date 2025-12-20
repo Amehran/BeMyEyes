@@ -12,7 +12,6 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import io.mockk.coEvery
 import io.mockk.coVerify
-import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
 import javax.inject.Inject
@@ -38,7 +37,8 @@ class AudioNotificationTest {
     @Test
     fun whenObjectIsDetected_thenSpeakIsCalledWithCorrectLabel() {
         // Given the detector will find a cat
-        coEvery { objectDetector.detect(any()) } returns flowOf(listOf(Detection("cat", 0.95f)))
+        val mockBox = android.graphics.RectF(0f, 0f, 100f, 100f)
+        coEvery { objectDetector.detect(any()) } returns listOf(Detection("cat", 0.95f, mockBox))
 
         // When the camera screen is displayed
         composeTestRule.waitForIdle() // Wait for UI to settle and analysis to run
