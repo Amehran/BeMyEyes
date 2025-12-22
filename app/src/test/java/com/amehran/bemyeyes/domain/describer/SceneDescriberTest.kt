@@ -48,4 +48,20 @@ class SceneDescriberTest {
         // "Car" should come first because it's urgent
         assertEquals("car and person ahead", description)
     }
+
+    @Test
+    fun `should count multiple items`() {
+        val rect = mockk<android.graphics.RectF>(relaxed = true)
+        val detections = listOf(
+            Detection("person", 0.9f, rect),
+            Detection("person", 0.9f, rect),
+            Detection("person", 0.9f, rect),
+            Detection("chair", 0.9f, rect)
+        )
+
+        val description = describer.describe(detections)
+
+        // Should group "person" -> "3 persons"
+        assertEquals("3 persons and chair ahead", description)
+    }
 }

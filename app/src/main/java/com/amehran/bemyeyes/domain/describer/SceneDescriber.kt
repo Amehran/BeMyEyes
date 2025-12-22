@@ -10,20 +10,33 @@ class SceneDescriber @Inject constructor() {
 
         val urgentLabels = setOf("car", "bus", "truck", "traffic light", "stop sign", "fire hydrant")
 
-        // Sort: Urgent first, then by confidence
-        val sortedDetections = detections.sortedWith(
-            compareByDescending<Detection> { urgentLabels.contains(it.label) }
-                .thenByDescending { it.confidence }
-        )
+        // Group by label first to count them
+        val counts = detections.groupingBy { it.label }.eachCount()
 
-        val labels = sortedDetections.map { it.label }
-        
-        return if (labels.size == 1) {
-            "${labels[0]} ahead"
+        // Create a list of "Label" or "N Labels" strings
+        // We still want to sort the GROUPS by urgency/importance.
+        // We'll use the "most confident" detection of that group to decide sort order, or just label urgency.
+        val groupedDescriptions = counts.map { (label, count) ->
+            val description = if (count > 1) "$count ${pluralize(label)}" else label
+            val isUrgent = urgentLabels.contains(label)
+            val maxConfidence = detections.filter { it.label == label }.maxOf { it.confidence }
+            
+            Triple(description, isUrgent, maxConfidence)
+        }.sortedWith(
+            compareByDescending<Triple<String, Boolean, Float>> { it.second } // Urgent?
+                .thenByDescending { it.third } // Confidence
+        ).map { it.first }
+
+        return if (groupedDescriptions.size == 1) {
+            "${groupedDescriptions[0]} ahead"
         } else {
-            val allButLast = labels.dropLast(1).joinToString(", ")
-            val last = labels.last()
+            val allButLast = groupedDescriptions.dropLast(1).joinToString(", ")
+            val last = groupedDescriptions.last()
             "$allButLast and $last ahead"
         }
+    }
+
+    private fun pluralize(label: String): String {
+        return if (label.endsWith("s")) "${label}es" else "${label}s"
     }
 }
