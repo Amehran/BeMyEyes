@@ -18,11 +18,15 @@ class DetectionTracker @Inject constructor() {
         fun isStable() = seenCount >= 3
     }
 
-    fun process(detections: List<Detection>): List<Detection> {
+    data class TrackingResult(
+        val allStableDetections: List<Detection>,
+        val newStableDetections: List<Detection> // "Freshly" stable this frame
+    )
+
+    fun process(detections: List<Detection>): TrackingResult {
         // Map current detections by label for easy lookup
-        // Note: This simplistic approach picks the last detection if multiple exist with same label.
-        // For Phase 4 (Stability), this is acceptable.
         val inputMap = detections.associateBy { it.label }
+        val newlyStable = mutableListOf<Detection>()
 
         // 1. Update existing trackers
         val iterator = trackedObjects.iterator()
@@ -30,6 +34,7 @@ class DetectionTracker @Inject constructor() {
             val entry = iterator.next()
             val label = entry.key
             val tracker = entry.value
+            val wasStableBefore = tracker.isStable()
 
             val newDetection = inputMap[label]
 
@@ -43,9 +48,14 @@ class DetectionTracker @Inject constructor() {
                 tracker.missingCount++
                 
                 // If it wasn't stable yet, a miss resets the progress
-                if (!tracker.isStable()) {
+                if (!wasStableBefore) {
                     tracker.seenCount = 0
                 }
+            }
+
+            // Check if it JUST became stable this frame
+            if (!wasStableBefore && tracker.isStable()) {
+                newlyStable.add(tracker.detection)
             }
 
             // Prune dead objects
@@ -65,10 +75,12 @@ class DetectionTracker @Inject constructor() {
             }
         }
 
-        // 3. Return only stable objects
-        return trackedObjects.values
+        // 3. Return results
+        val allStable = trackedObjects.values
             .filter { it.isStable() }
             .map { it.detection }
             .toList()
+
+        return TrackingResult(allStable, newlyStable)
     }
 }

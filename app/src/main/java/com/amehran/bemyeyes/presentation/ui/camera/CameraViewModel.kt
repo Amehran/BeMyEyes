@@ -38,33 +38,42 @@ class CameraViewModel @Inject constructor(
             try {
                 val rawDetections = objectDetector.detect(bitmap)
                 // Filter raw detections through the Temporal Smoothing Tracker
-                val stableDetections = detectionTracker.process(rawDetections)
+                val trackingResult = detectionTracker.process(rawDetections)
+                val allStableDetections = trackingResult.allStableDetections
+                val newStableDetections = trackingResult.newStableDetections
                 
-                _detections.value = stableDetections
+                _detections.value = allStableDetections
 
-                // Prioritize detections: Urgent > Close > Confident
-                val bestDetection = stableDetections.sortedWith(
+                // STRATEGY: 
+                // 1. Always announce "New" stable objects (entered the scene or stabilized).
+                // 2. Announce "Urgent" objects if cooldown passed (re-warn safety).
+                // 3. Announce "Best" object ONLY if we haven't said it recently (scanning assistance).
+
+                // Rule 1: New Stable Objects (High Priority)
+                val bestNewDetection = newStableDetections.maxByOrNull { it.confidence }
+                if (bestNewDetection != null) {
+                    speakDetection(bestNewDetection)
+                    return@launch
+                }
+
+                // Rule 2 & 3: Persistent Objects
+                // If nothing new appeared, look at what's already there.
+                val bestPersistentDetection = allStableDetections.sortedWith(
                     compareByDescending<Detection> { isUrgent(it.label) } // Urgent first
                         .thenByDescending { getDistanceScore(it.boundingBox) } // Closer first
-                        .thenByDescending { it.confidence } // More confident first
                 ).firstOrNull()
 
-                bestDetection?.let { detection ->
-                    val message = detection.getDescription()
+                bestPersistentDetection?.let { detection ->
                     val currentTime = System.currentTimeMillis()
                     val label = detection.label
+                    val lastTime = lastSpokenTimestamp[label] ?: 0L
                     
-                    val lastTimeForThisObject = lastSpokenTimestamp[label] ?: 0L
+                    // Urgent items have a shorter cooldown (e.g., 5s) to ensure safety reminders
+                    // Normal items have a long cooldown (e.g., 10s) to avoid "Chair... Chair..." chatter
+                    val cooldownMs = if (isUrgent(label)) 5000L else 10000L
 
-                    // Speak if enough time has passed for THIS specific object
-                    if ((currentTime - lastTimeForThisObject) > spamCooldownMs) {
-                        textToSpeechManager.speak(message)
-                        
-                        if (isUrgent(label)) {
-                            vibrationManager.vibrateCaution()
-                        }
-
-                        lastSpokenTimestamp[label] = currentTime
+                    if ((currentTime - lastTime) > cooldownMs) {
+                        speakDetection(detection)
                     }
                 }
             } finally {
@@ -81,6 +90,19 @@ class CameraViewModel @Inject constructor(
         // Height ratio is a proxy for distance (larger height = closer)
         // Model input is 320x320
         return box.height() / 320f
+    }
+
+    private fun speakDetection(detection: Detection) {
+        val message = detection.getDescription()
+        val label = detection.label
+        
+        textToSpeechManager.speak(message)
+        
+        if (isUrgent(label)) {
+            vibrationManager.vibrateCaution()
+        }
+        
+        lastSpokenTimestamp[label] = System.currentTimeMillis()
     }
 
     override fun onCleared() {
