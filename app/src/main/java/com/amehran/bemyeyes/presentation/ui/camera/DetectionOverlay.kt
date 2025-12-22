@@ -32,11 +32,19 @@ fun DetectionOverlay(
         // WE NEED TO SCALE.
 
         // Model Input Size
+        // EfficientDet-Lite0 input size
         val modelWidth = 320f
         val modelHeight = 320f
+        
+        // Detect if the coordinates are normalized (0..1) or absolute (0..320)
+        // We peek at the first detection to guess.
+        // If left > 1.0 or width > 1.0, it's likely absolute pixels.
+        val isAbsoluteCoords = detections.firstOrNull()?.boundingBox?.let { 
+            it.width() > 1.0f || it.height() > 1.0f 
+        } ?: true
 
-        val scaleX = size.width / modelWidth
-        val scaleY = size.height / modelHeight
+        val scaleX = if (isAbsoluteCoords) size.width / modelWidth else size.width
+        val scaleY = if (isAbsoluteCoords) size.height / modelHeight else size.height
 
         val paint = Paint().apply {
             color = android.graphics.Color.WHITE

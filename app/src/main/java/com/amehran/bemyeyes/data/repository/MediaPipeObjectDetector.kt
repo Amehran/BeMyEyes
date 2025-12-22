@@ -70,15 +70,6 @@ class MediaPipeObjectDetector(
             }
         }
 
-        // Deduplicate by label, keeping highest confidence
-        val uniqueDetectionsMap = mutableMapOf<String, Detection>()
-        for (detection in detections) {
-            val existing = uniqueDetectionsMap[detection.label]
-            if (existing == null || detection.confidence > existing.confidence) {
-                uniqueDetectionsMap[detection.label] = detection
-            }
-        }
-
-        return uniqueDetectionsMap.values.toList()
+        return detections
     }
 }
