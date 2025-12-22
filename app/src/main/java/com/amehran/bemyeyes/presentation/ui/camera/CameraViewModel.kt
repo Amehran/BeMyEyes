@@ -19,7 +19,8 @@ import javax.inject.Inject
 class CameraViewModel @Inject constructor(
     private val objectDetector: ObjectDetector,
     private val textToSpeechManager: TextToSpeechManager,
-    private val vibrationManager: VibrationManager
+    private val vibrationManager: VibrationManager,
+    private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker
 ) : ViewModel() {
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
@@ -35,11 +36,14 @@ class CameraViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val detections = objectDetector.detect(bitmap)
-                _detections.value = detections
+                val rawDetections = objectDetector.detect(bitmap)
+                // Filter raw detections through the Temporal Smoothing Tracker
+                val stableDetections = detectionTracker.process(rawDetections)
+                
+                _detections.value = stableDetections
 
                 // Prioritize detections: Urgent > Close > Confident
-                val bestDetection = detections.sortedWith(
+                val bestDetection = stableDetections.sortedWith(
                     compareByDescending<Detection> { isUrgent(it.label) } // Urgent first
                         .thenByDescending { getDistanceScore(it.boundingBox) } // Closer first
                         .thenByDescending { it.confidence } // More confident first

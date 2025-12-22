@@ -28,11 +28,16 @@ class CameraViewModelTest {
     private val objectDetector: ObjectDetector = mockk(relaxed = true)
     private val textToSpeechManager: TextToSpeechManager = mockk(relaxed = true)
     private val vibrationManager: VibrationManager = mockk(relaxed = true)
+    private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker = mockk(relaxed = true)
     private lateinit var viewModel: CameraViewModel
 
     @Before
     fun setup() {
-        viewModel = CameraViewModel(objectDetector, textToSpeechManager, vibrationManager)
+        // By default, the mocked tracker just returns whatever it gets (Pass-through)
+        // so we don't break existing tests that assume 1-frame detection logic.
+        io.mockk.every { detectionTracker.process(any()) } answers { firstArg() }
+        
+        viewModel = CameraViewModel(objectDetector, textToSpeechManager, vibrationManager, detectionTracker)
     }
 
     @Test

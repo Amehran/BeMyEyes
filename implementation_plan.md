@@ -31,10 +31,10 @@
 
 ## Phase 4: Temporal Smoothing (TDD)
 **Goal:** Implement a "Buffer" to ignore 1-frame flickers and only report stable objects.
-- [ ] **Test (Red):** Create `DetectionTrackerTest.kt`.
+- [x] **Test (Red):** Create `DetectionTrackerTest.kt`.
     - Test: `process_shouldWait3Frames_BeforeReportingNewObject()`.
     - Test: `process_shouldKeepObjectAlive_IfMissingFor1Frame()`.
     - Test: `process_shouldDropObject_IfMissingFor5Frames()`.
-- [ ] **Implement (Green):** Create `DetectionTracker` class (Pure Kotlin logic, no Android dependencies).
-- [ ] **Integration:** Hook `DetectionTracker` into `CameraViewModel`.
-- [ ] **Action:** Commit `feat: add DetectionTracker for temporal smoothing`.
+- [x] **Implement (Green):** Create `DetectionTracker` class (Pure Kotlin logic, no Android dependencies).
+- [x] **Integration:** Hook `DetectionTracker` into `CameraViewModel`.
+- [x] **Action:** Commit `feat: add DetectionTracker for temporal smoothing`.
