@@ -104,23 +104,13 @@ fun CameraPreview(
                             val rotationDegrees = imageProxy.imageInfo.rotationDegrees
                             val bitmap = imageProxy.toBitmap()
                             
-                            // Log.d("CameraScreen", "Original: ${bitmap.width}x${bitmap.height}, Rotation: $rotationDegrees")
-
-                            // If the image is rotated (e.g., portrait mode is 90 deg), we must rotate the bitmap
-                            // 'toBitmap()' converts YUV to Bitmap but DOES NOT apply rotation automatically solely based on ImageInfo.
-                            // However, we can use a Matrix or check if 'toBitmap()' handles it.
-                            // Actually, 'toBitmap()' *tries* to respect it but often needs explicit handling if passed to ML Kit or TFLite.
-                            // Since we are passing a plain Bitmap to MediaPipe, MediaPipe expects it upright.
-                            
-                            // Let's ensure rotation.
+                            // Ensure rotation is applied (MediaPipe expects upright image)
                             val matrix = android.graphics.Matrix()
                             matrix.postRotate(rotationDegrees.toFloat())
                             val rotatedBitmap = Bitmap.createBitmap(
                                 bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
                             )
                             
-                            // Log.d("CameraScreen", "Rotated: ${rotatedBitmap.width}x${rotatedBitmap.height}")
-
                             onDetect(rotatedBitmap)
                             imageProxy.close()
                         }
