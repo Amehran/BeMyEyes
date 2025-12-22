@@ -47,6 +47,8 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 
     if (hasCamPermission) {
         CameraPreview(context, lifecycleOwner, viewModel::detect)
+        // Add overlay on top of camera preview
+        DetectionOverlay(detections = detections)
     }
 }
 

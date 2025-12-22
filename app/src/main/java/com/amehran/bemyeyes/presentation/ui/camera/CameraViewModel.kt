@@ -20,7 +20,8 @@ class CameraViewModel @Inject constructor(
     private val objectDetector: ObjectDetector,
     private val textToSpeechManager: TextToSpeechManager,
     private val vibrationManager: VibrationManager,
-    private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker
+    private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker,
+    private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber
 ) : ViewModel() {
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
@@ -37,44 +38,30 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val rawDetections = objectDetector.detect(bitmap)
-                // Filter raw detections through the Temporal Smoothing Tracker
                 val trackingResult = detectionTracker.process(rawDetections)
                 val allStableDetections = trackingResult.allStableDetections
                 val newStableDetections = trackingResult.newStableDetections
                 
                 _detections.value = allStableDetections
 
-                // STRATEGY: 
-                // 1. Always announce "New" stable objects (entered the scene or stabilized).
-                // 2. Announce "Urgent" objects if cooldown passed (re-warn safety).
-                // 3. Announce "Best" object ONLY if we haven't said it recently (scanning assistance).
+                // PHASE 5: Contextual Intelligence
+                // Shift from "Single Object" to "Scene Description"
 
-                // Rule 1: New Stable Objects (High Priority)
-                val bestNewDetection = newStableDetections.maxByOrNull { it.confidence }
-                if (bestNewDetection != null) {
-                    speakDetection(bestNewDetection)
+                // 1. If scene changed (new objects stable), describe the scene.
+                if (newStableDetections.isNotEmpty()) {
+                    speakScene(allStableDetections)
                     return@launch
                 }
 
-                // Rule 2 & 3: Persistent Objects
-                // If nothing new appeared, look at what's already there.
-                val bestPersistentDetection = allStableDetections.sortedWith(
-                    compareByDescending<Detection> { isUrgent(it.label) } // Urgent first
-                        .thenByDescending { getDistanceScore(it.boundingBox) } // Closer first
-                ).firstOrNull()
-
-                bestPersistentDetection?.let { detection ->
-                    val currentTime = System.currentTimeMillis()
-                    val label = detection.label
-                    val lastTime = lastSpokenTimestamp[label] ?: 0L
-                    
-                    // Urgent items have a shorter cooldown (e.g., 5s) to ensure safety reminders
-                    // Normal items have a long cooldown (e.g., 10s) to avoid "Chair... Chair..." chatter
-                    val cooldownMs = if (isUrgent(label)) 5000L else 10000L
-
-                    if ((currentTime - lastTime) > cooldownMs) {
-                        speakDetection(detection)
-                    }
+                // 2. Periodic Reminder (if something urgent is there)
+                // Check if we have urgent items and it's been a while since we spoke about them
+                val hasUrgent = allStableDetections.any { isUrgent(it.label) }
+                if (hasUrgent) {
+                     // Check global scene cooldown for urgent reminders (e.g. 5s)
+                     val currentTime = System.currentTimeMillis()
+                     if (currentTime - lastSceneSpokenTime > 5000L) {
+                         speakScene(allStableDetections)
+                     }
                 }
             } finally {
                 isProcessing = false
@@ -82,27 +69,22 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    private var lastSceneSpokenTime = 0L
+
     private fun isUrgent(label: String): Boolean {
         return setOf("car", "bus", "truck", "traffic light", "stop sign", "fire hydrant").contains(label)
     }
 
-    private fun getDistanceScore(box: android.graphics.RectF): Float {
-        // Height ratio is a proxy for distance (larger height = closer)
-        // Model input is 320x320
-        return box.height() / 320f
-    }
-
-    private fun speakDetection(detection: Detection) {
-        val message = detection.getDescription()
-        val label = detection.label
+    private fun speakScene(detections: List<Detection>) {
+        if (detections.isEmpty()) return
         
+        val message = sceneDescriber.describe(detections)
         textToSpeechManager.speak(message)
-        
-        if (isUrgent(label)) {
+        lastSceneSpokenTime = System.currentTimeMillis()
+
+        if (detections.any { isUrgent(it.label) }) {
             vibrationManager.vibrateCaution()
         }
-        
-        lastSpokenTimestamp[label] = System.currentTimeMillis()
     }
 
     override fun onCleared() {

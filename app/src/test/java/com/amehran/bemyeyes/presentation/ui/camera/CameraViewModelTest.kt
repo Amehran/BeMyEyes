@@ -29,6 +29,7 @@ class CameraViewModelTest {
     private val textToSpeechManager: TextToSpeechManager = mockk(relaxed = true)
     private val vibrationManager: VibrationManager = mockk(relaxed = true)
     private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker = mockk(relaxed = true)
+    private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber = mockk(relaxed = true)
     private lateinit var viewModel: CameraViewModel
 
     @Before
@@ -43,7 +44,13 @@ class CameraViewModelTest {
             )
         }
         
-        viewModel = CameraViewModel(objectDetector, textToSpeechManager, vibrationManager, detectionTracker)
+        // Default Mock Describer
+        io.mockk.every { sceneDescriber.describe(any()) } answers {
+            val list = firstArg<List<Detection>>()
+            list.joinToString(" and ") { it.label } + " ahead"
+        }
+        
+        viewModel = CameraViewModel(objectDetector, textToSpeechManager, vibrationManager, detectionTracker, sceneDescriber)
     }
 
     @Test
@@ -66,7 +73,8 @@ class CameraViewModelTest {
             assertEquals(expectedDetections, actualDetections)
 
             // Verify that the speak method was called with the correct description
-            verify { textToSpeechManager.speak("Person, in front, close") }
+            // New Phase 5 Logic: Speak Scene
+            verify { textToSpeechManager.speak("Person ahead") }
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -94,19 +102,17 @@ class CameraViewModelTest {
         viewModel.detect(bitmap)
 
         // Then
-        // Should speak the Car because it is confident and urgent.
-        // Since both are "new" in this mock, the maxBy confidence might pick Person (0.9) over Car (0.8).
-        // Let's adjust the logic in ViewModel or Test to force Car priority.
+        // Should speak the WHOLE SCENE
+        // Our mock describer joins with " and ".
+        // Note: The order depends on how `allStableDetections` is passed.
+        // `objectDetector` returns a list. `DetectionTracker` passes it through.
+        // `speakScene` passes it to `describer`.
+        // `describer` implementation (real one) sorts.
+        // Our MOCK describer just joins them in input order.
+        // Detection List order: [Person, Car].
+        // Expect: "Person and car ahead"
         
-        // Actually, our ViewModel Logic Rule 1 says: "bestNewDetection = newStableDetections.maxByOrNull { it.confidence }"
-        // Person is 0.9, Car is 0.8. So it will pick Person if both are new.
-        // We want Urgent to override confidence in Rule 1 too? Or relies on persistence?
-        
-        // Let's change the test to make Car more confident to verify it works, 
-        // OR update the ViewModel logic to prioritize Urgent even for "New" items.
-        
-        // Updating Test for now: Make Car 0.95
-        verify { textToSpeechManager.speak("car, in front") }
+        verify { textToSpeechManager.speak("Person and car ahead") }
         
         // Should also vibrate for urgent object
         verify { vibrationManager.vibrateCaution() }
