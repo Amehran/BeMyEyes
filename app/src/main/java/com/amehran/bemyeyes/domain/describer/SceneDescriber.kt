@@ -17,9 +17,21 @@ class SceneDescriber @Inject constructor() {
         // We still want to sort the GROUPS by urgency/importance.
         // We'll use the "most confident" detection of that group to decide sort order, or just label urgency.
         val groupedDescriptions = counts.map { (label, count) ->
-            val description = if (count > 1) "$count ${pluralize(label)}" else label
+            val groupDetections = detections.filter { it.label == label }
+            val minDistance = groupDetections.mapNotNull { it.distanceMeters }.minOrNull()
+            
+            val baseLabel = if (count > 1) "$count ${pluralize(label)}" else label
+            
+            val description = if (minDistance != null) {
+                // Round to 1 decimal place or integer for clarity
+                val distStr = "%.1f".format(minDistance)
+                if (count > 1) "$baseLabel, closest at $distStr meters" else "$baseLabel at $distStr meters"
+            } else {
+                baseLabel
+            }
+
             val isUrgent = urgentLabels.contains(label)
-            val maxConfidence = detections.filter { it.label == label }.maxOf { it.confidence }
+            val maxConfidence = groupDetections.maxOf { it.confidence }
             
             Triple(description, isUrgent, maxConfidence)
         }.sortedWith(

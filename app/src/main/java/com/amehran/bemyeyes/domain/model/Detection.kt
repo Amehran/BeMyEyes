@@ -3,25 +3,31 @@ package com.amehran.bemyeyes.domain.model
 data class Detection(
     val label: String,
     val confidence: Float,
-    val boundingBox: android.graphics.RectF
+    val boundingBox: android.graphics.RectF,
+    val distanceMeters: Float? = null
 ) {
     fun getDescription(): String {
-        // Model input size is 320x320
-        val imageWidth = 320f
-        val imageHeight = 320f
-
+        // Model input/box is normalized 0..1
         val centerX = boundingBox.centerX()
         val position = when {
-            centerX < imageWidth * 0.35 -> "to the left"
-            centerX > imageWidth * 0.65 -> "to the right"
+            centerX < 0.35f -> "to the left"
+            centerX > 0.65f -> "to the right"
             else -> "in front"
         }
 
-        val heightRatio = boundingBox.height() / imageHeight
-        val distance = when {
-            heightRatio > 0.6 -> "very close"
-            heightRatio > 0.3 -> "close"
-            else -> ""
+        val heightRatio = boundingBox.height() // 0..1
+        val distance = if (distanceMeters != null) {
+             when {
+                 distanceMeters < 2.0 -> "very close"
+                 distanceMeters < 5.0 -> "close"
+                 else -> "at %.1fm".format(distanceMeters)
+             }
+        } else {         
+            when {
+                heightRatio > 0.6 -> "very close"
+                heightRatio > 0.3 -> "close"
+                else -> ""
+            }
         }
 
         // Urgent objects that should be announced with more urgency or specific phrasing

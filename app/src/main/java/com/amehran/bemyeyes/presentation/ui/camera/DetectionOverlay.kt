@@ -32,19 +32,9 @@ fun DetectionOverlay(
         // WE NEED TO SCALE.
 
         // Model Input Size
-        // EfficientDet-Lite0 input size
-        val modelWidth = 320f
-        val modelHeight = 320f
-        
-        // Detect if the coordinates are normalized (0..1) or absolute (0..320)
-        // We peek at the first detection to guess.
-        // If left > 1.0 or width > 1.0, it's likely absolute pixels.
-        val isAbsoluteCoords = detections.firstOrNull()?.boundingBox?.let { 
-            it.width() > 1.0f || it.height() > 1.0f 
-        } ?: true
-
-        val scaleX = if (isAbsoluteCoords) size.width / modelWidth else size.width
-        val scaleY = if (isAbsoluteCoords) size.height / modelHeight else size.height
+        // Assume detections have normalized coordinates (0..1)
+        val scaleX = size.width
+        val scaleY = size.height
 
         val paint = Paint().apply {
             color = android.graphics.Color.WHITE
@@ -55,8 +45,7 @@ fun DetectionOverlay(
         detections.forEach { detection ->
             val box = detection.boundingBox
             
-            // Scale Model Coords -> Screen Coords
-            // Note: Camera feed might be rotated/cropped. This is a "best effort" overlay.
+            // Scale Normalized Coords -> Screen Coords
             val left = box.left * scaleX
             val top = box.top * scaleY
             val width = box.width() * scaleX
@@ -70,8 +59,9 @@ fun DetectionOverlay(
             )
 
             // Draw Label
+            val distanceText = detection.distanceMeters?.let { " - %.1fm".format(it) } ?: ""
             drawContext.canvas.nativeCanvas.drawText(
-                "${detection.label} ${(detection.confidence * 100).toInt()}%",
+                "${detection.label} ${(detection.confidence * 100).toInt()}%$distanceText",
                 left,
                 top - 10,
                 paint

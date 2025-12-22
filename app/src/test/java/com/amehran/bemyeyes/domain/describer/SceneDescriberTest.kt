@@ -64,4 +64,29 @@ class SceneDescriberTest {
         // Should group "person" -> "3 persons"
         assertEquals("3 persons and chair ahead", description)
     }
+
+    @Test
+    fun `should include distance in description`() {
+        val rect = mockk<android.graphics.RectF>(relaxed = true)
+        val detections = listOf(
+            Detection("car", 0.9f, rect, distanceMeters = 5.2f)
+        )
+
+        val description = describer.describe(detections)
+
+        assertEquals("car at 5.2 meters ahead", description)
+    }
+
+    @Test
+    fun `should group with min distance`() {
+        val rect = mockk<android.graphics.RectF>(relaxed = true)
+        val detections = listOf(
+            Detection("car", 0.9f, rect, distanceMeters = 10f),
+            Detection("car", 0.9f, rect, distanceMeters = 3.5f)
+        )
+
+        val description = describer.describe(detections)
+
+        assertEquals("2 cars, closest at 3.5 meters ahead", description)
+    }
 }

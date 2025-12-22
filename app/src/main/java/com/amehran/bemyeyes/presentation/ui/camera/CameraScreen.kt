@@ -3,9 +3,15 @@ package com.amehran.bemyeyes.presentation.ui.camera
 import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -40,15 +46,28 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 
     val detections by viewModel.detections.collectAsState()
 
-    if (detections.isNotEmpty()) {
-        val detectionText = detections.joinToString { it.getDescription() }
-        Toast.makeText(context, detectionText, Toast.LENGTH_SHORT).show()
-    }
+
 
     if (hasCamPermission) {
-        CameraPreview(context, lifecycleOwner, viewModel::detect)
-        // Add overlay on top of camera preview
-        DetectionOverlay(detections = detections)
+        Box(modifier = Modifier.fillMaxSize()) {
+            CameraPreview(context, lifecycleOwner, viewModel::detect)
+            
+            // Visual Boxes Overlay
+            DetectionOverlay(detections = detections)
+            
+            // Text Log Overlay (Bottom)
+            if (detections.isNotEmpty()) {
+                val detectionText = detections.joinToString { "${it.label} ${(it.confidence*100).toInt()}%" }
+                Text(
+                    text = detectionText,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(16.dp)
+                )
+            }
+        }
     }
 }
 
@@ -76,12 +95,33 @@ fun CameraPreview(
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                 val imageAnalysis = ImageAnalysis.Builder()
+                    .setTargetResolution(android.util.Size(1280, 720))
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also {
                         it.setAnalyzer(cameraExecutor) { imageProxy ->
+                            // Correctly rotate the bitmap
+                            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
                             val bitmap = imageProxy.toBitmap()
-                            onDetect(bitmap)
+                            
+                            // Log.d("CameraScreen", "Original: ${bitmap.width}x${bitmap.height}, Rotation: $rotationDegrees")
+
+                            // If the image is rotated (e.g., portrait mode is 90 deg), we must rotate the bitmap
+                            // 'toBitmap()' converts YUV to Bitmap but DOES NOT apply rotation automatically solely based on ImageInfo.
+                            // However, we can use a Matrix or check if 'toBitmap()' handles it.
+                            // Actually, 'toBitmap()' *tries* to respect it but often needs explicit handling if passed to ML Kit or TFLite.
+                            // Since we are passing a plain Bitmap to MediaPipe, MediaPipe expects it upright.
+                            
+                            // Let's ensure rotation.
+                            val matrix = android.graphics.Matrix()
+                            matrix.postRotate(rotationDegrees.toFloat())
+                            val rotatedBitmap = Bitmap.createBitmap(
+                                bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                            )
+                            
+                            // Log.d("CameraScreen", "Rotated: ${rotatedBitmap.width}x${rotatedBitmap.height}")
+
+                            onDetect(rotatedBitmap)
                             imageProxy.close()
                         }
                     }
