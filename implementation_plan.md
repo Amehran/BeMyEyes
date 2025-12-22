@@ -38,3 +38,12 @@
 - [x] **Implement (Green):** Create `DetectionTracker` class (Pure Kotlin logic, no Android dependencies).
 - [x] **Integration:** Hook `DetectionTracker` into `CameraViewModel`.
 - [x] **Action:** Commit `feat: add DetectionTracker for temporal smoothing`.
+
+## Phase 5: Contextual Intelligence (TDD)
+**Goal:** Group objects into a meaningful sentence instead of shouting single words.
+- [ ] **Test (Red):** Create `SceneDescriberTest.kt`.
+    - Test: `describe_shouldGroupObjects_LikeChairAndTable()`.
+    - Test: `describe_shouldPrioritizeUrgentObjects_AtStartOfSentinel()`.
+- [ ] **Implement (Green):** Create `SceneDescriber` class.
+- [ ] **Integration:** Replace the single-object speech logic in `CameraViewModel` with `SceneDescriber.describe(List<Detection>)`.
+- [ ] **Action:** Commit `feat: implement scene description logic`.
