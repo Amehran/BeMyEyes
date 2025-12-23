@@ -26,6 +26,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -48,14 +57,51 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 
 
 
+    var isCurtainMode by remember { mutableStateOf(true) }
+
     if (hasCamPermission) {
         Box(modifier = Modifier.fillMaxSize()) {
             CameraPreview(context, lifecycleOwner, viewModel::detect)
             
-            // Visual Boxes Overlay
-            DetectionOverlay(detections = detections)
-
-
+            // Visual Boxes Overlay (Hide in curtain mode for true blackness? Or keep for debug? Hide is safer for privacy)
+            if (!isCurtainMode) {
+                DetectionOverlay(detections = detections)
+                
+                // Privacy / Curtain Mode Button (Top Right)
+                IconButton(
+                    onClick = { isCurtainMode = true },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 48.dp, end = 16.dp)
+                        .zIndex(1f) // Ensure button is always on top of detection layers
+                        .background(Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "Enter Curtain Mode",
+                        tint = Color.White
+                    )
+                }
+            } else {
+                // Curtain Mode Overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = { isCurtainMode = false }
+                            )
+                        }
+                ) {
+                    Text(
+                        text = "Curtain Mode Active\nDouble tap to exit",
+                        color = Color.DarkGray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
         }
     }
 }
