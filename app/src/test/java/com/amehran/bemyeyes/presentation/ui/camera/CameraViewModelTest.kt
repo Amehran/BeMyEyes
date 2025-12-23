@@ -154,19 +154,19 @@ class CameraViewModelTest {
         val table = Detection("table", 0.9f, rect)
 
         // 1. Detect CHAIR
-        coEvery { objectDetector.detect(any()) } returns listOf(chair)
+        coEvery { objectDetector.detect(any<Bitmap>()) } returns listOf(chair)
         viewModel.detect(bitmap)
         verify(exactly = 1) { textToSpeechManager.speak(match { it.contains("chair") }) }
 
         // 2. Detect TABLE
-        coEvery { objectDetector.detect(any()) } returns listOf(table)
+        coEvery { objectDetector.detect(any<Bitmap>()) } returns listOf(table)
         viewModel.detect(bitmap)
         verify(exactly = 1) { textToSpeechManager.speak(match { it.contains("table") }) }
 
         // 3. Detect CHAIR again (Immediately)
         // DESIRED BEHAVIOR: Silence (Cooldown hasn't passed for Chair)
         // CURRENT BUG: Speak (Because "Chair" != "Table")
-        coEvery { objectDetector.detect(any()) } returns listOf(chair)
+        coEvery { objectDetector.detect(any<Bitmap>()) } returns listOf(chair)
         
         // IMPORTANT: For this test step, we must simulate that "Chair" is NOT "newly stable",
         // otherwise Rule 1 (Always speak new stable) will trigger and bypass the debounce.

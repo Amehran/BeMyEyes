@@ -6,4 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ObjectDetector {
     suspend fun detect(bitmap: Bitmap): List<Detection>
+    
+    // Direct YUV support
+    suspend fun detect(imageProxy: androidx.camera.core.ImageProxy): List<Detection>
 }

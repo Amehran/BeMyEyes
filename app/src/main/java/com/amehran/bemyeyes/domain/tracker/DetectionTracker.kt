@@ -40,9 +40,34 @@ class DetectionTracker @Inject constructor() {
 
             if (newDetection != null) {
                 // Object matched
+                // Object matched
                 tracker.seenCount++
                 tracker.missingCount = 0
-                tracker.detection = newDetection
+                
+                // Smoothing (EMA) to reduce jitter in distance and position
+                val oldDet = tracker.detection
+                val alpha = 0.7f // 70% new, 30% old
+                
+                // 1. Smooth Box
+                val newBox = newDetection.boundingBox
+                val smoothedBox = android.graphics.RectF(
+                    oldDet.boundingBox.left * (1 - alpha) + newBox.left * alpha,
+                    oldDet.boundingBox.top * (1 - alpha) + newBox.top * alpha,
+                    oldDet.boundingBox.right * (1 - alpha) + newBox.right * alpha,
+                    oldDet.boundingBox.bottom * (1 - alpha) + newBox.bottom * alpha
+                )
+                
+                // 2. Smooth Distance
+                val smoothedDist = if (oldDet.distanceMeters != null && newDetection.distanceMeters != null) {
+                    oldDet.distanceMeters * (1 - alpha) + newDetection.distanceMeters * alpha
+                } else {
+                    newDetection.distanceMeters
+                }
+
+                tracker.detection = newDetection.copy(
+                    boundingBox = smoothedBox,
+                    distanceMeters = smoothedDist
+                )
             } else {
                 // Object missing
                 tracker.missingCount++

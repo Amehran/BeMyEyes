@@ -54,19 +54,8 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
             
             // Visual Boxes Overlay
             DetectionOverlay(detections = detections)
-            
-            // Text Log Overlay (Bottom)
-            if (detections.isNotEmpty()) {
-                val detectionText = detections.joinToString { "${it.label} ${(it.confidence*100).toInt()}%" }
-                Text(
-                    text = detectionText,
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(16.dp)
-                )
-            }
+
+
         }
     }
 }
@@ -75,7 +64,7 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 fun CameraPreview(
     context: Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
-    onDetect: (Bitmap) -> Unit
+    onDetect: (androidx.camera.core.ImageProxy) -> Unit
 ) {
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
 
@@ -88,6 +77,7 @@ fun CameraPreview(
     AndroidView(
         factory = {
             val previewView = PreviewView(it)
+            previewView.keepScreenOn = true
             val cameraProviderFuture = ProcessCameraProvider.getInstance(it)
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
@@ -97,22 +87,22 @@ fun CameraPreview(
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setTargetResolution(android.util.Size(1280, 720))
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .build()
                     .also {
+                        var lastAnalyzedTimestamp = 0L
+
                         it.setAnalyzer(cameraExecutor) { imageProxy ->
-                            // Correctly rotate the bitmap
-                            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                            val bitmap = imageProxy.toBitmap()
-                            
-                            // Ensure rotation is applied (MediaPipe expects upright image)
-                            val matrix = android.graphics.Matrix()
-                            matrix.postRotate(rotationDegrees.toFloat())
-                            val rotatedBitmap = Bitmap.createBitmap(
-                                bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-                            )
-                            
-                            onDetect(rotatedBitmap)
-                            imageProxy.close()
+                            // Throttle analysis to ~5 FPS (200ms)
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastAnalyzedTimestamp < 200) {
+                                imageProxy.close()
+                                return@setAnalyzer
+                            }
+                            lastAnalyzedTimestamp = currentTime
+
+                            // Pass directly to VM. VM is responsible for closing imageProxy!
+                            onDetect(imageProxy)
                         }
                     }
 
