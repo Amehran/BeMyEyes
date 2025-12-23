@@ -10,8 +10,6 @@ import com.amehran.bemyeyes.domain.repository.VibrationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,16 +17,17 @@ import javax.inject.Inject
 class CameraViewModel @Inject constructor(
     private val objectDetector: ObjectDetector,
     private val textToSpeechManager: TextToSpeechManager,
-    private val vibrationManager: VibrationManager
+    private val vibrationManager: VibrationManager,
+    private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker,
+    private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber
 ) : ViewModel() {
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
     val detections = _detections.asStateFlow()
 
+
+
     private var isProcessing = false
-    private var lastSpokenMessage: String? = null
-    private var lastSpokenTime: Long = 0
-    private val spamCooldownMs = 4000L // Don't repeat same message for 4 seconds
 
     fun detect(bitmap: Bitmap) {
         if (isProcessing) return
@@ -36,46 +35,79 @@ class CameraViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val detections = objectDetector.detect(bitmap)
-                _detections.value = detections
-
-                // Prioritize detections: Urgent > Close > Confident
-                val bestDetection = detections.sortedWith(
-                    compareByDescending<Detection> { isUrgent(it.label) } // Urgent first
-                        .thenByDescending { getDistanceScore(it.boundingBox) } // Closer first
-                        .thenByDescending { it.confidence } // More confident first
-                ).firstOrNull()
-
-                bestDetection?.let { detection ->
-                    val message = detection.getDescription()
-                    val currentTime = System.currentTimeMillis()
-
-                    // Speak if it's a new message OR if enough time has passed for the same message
-                    if (message != lastSpokenMessage || (currentTime - lastSpokenTime) > spamCooldownMs) {
-                        textToSpeechManager.speak(message)
-                        
-                        if (isUrgent(detection.label)) {
-                            vibrationManager.vibrateCaution()
-                        }
-
-                        lastSpokenMessage = message
-                        lastSpokenTime = currentTime
-                    }
-                }
+                val startTime = System.currentTimeMillis()
+                val rawDetections = objectDetector.detect(bitmap)
+                processDetections(rawDetections, startTime)
             } finally {
                 isProcessing = false
             }
         }
     }
 
-    private fun isUrgent(label: String): Boolean {
-        return setOf("car", "bus", "truck", "traffic light", "stop sign", "fire hydrant").contains(label)
+    fun detect(imageProxy: androidx.camera.core.ImageProxy) {
+        if (isProcessing) {
+            imageProxy.close()
+            return
+        }
+        isProcessing = true
+
+        viewModelScope.launch {
+            try {
+                val startTime = System.currentTimeMillis()
+                val rawDetections = objectDetector.detect(imageProxy)
+                processDetections(rawDetections, startTime)
+            } finally {
+                imageProxy.close()
+                isProcessing = false
+            }
+        }
     }
 
-    private fun getDistanceScore(box: android.graphics.RectF): Float {
-        // Height ratio is a proxy for distance (larger height = closer)
-        // Model input is 320x320
-        return box.height() / 320f
+    private suspend fun processDetections(rawDetections: List<Detection>, startTime: Long) {
+        val endTime = System.currentTimeMillis()
+
+
+
+        val trackingResult = detectionTracker.process(rawDetections)
+        val allStableDetections = trackingResult.allStableDetections
+        val newStableDetections = trackingResult.newStableDetections
+        
+        _detections.value = allStableDetections
+
+        // PHASE 5: Contextual Intelligence
+        
+        // 1. If scene changed, describe logic...
+        if (newStableDetections.isNotEmpty()) {
+            speakScene(allStableDetections)
+            return
+        }
+
+        // 2. Periodic Reminder
+        val hasUrgent = allStableDetections.any { isUrgent(it.label) }
+        if (hasUrgent) {
+             val currentTime = System.currentTimeMillis()
+             if (currentTime - lastSceneSpokenTime > 5000L) {
+                 speakScene(allStableDetections)
+             }
+        }
+    }
+
+    private var lastSceneSpokenTime = 0L
+
+    private fun isUrgent(label: String): Boolean {
+        return setOf("car", "bus", "truck", "traffic light", "stop sign", "fire hydrant", "Obstacle").contains(label)
+    }
+
+    private fun speakScene(detections: List<Detection>) {
+        if (detections.isEmpty()) return
+        
+        val message = sceneDescriber.describe(detections)
+        textToSpeechManager.speak(message)
+        lastSceneSpokenTime = System.currentTimeMillis()
+
+        if (detections.any { isUrgent(it.label) }) {
+            vibrationManager.vibrateCaution()
+        }
     }
 
     override fun onCleared() {

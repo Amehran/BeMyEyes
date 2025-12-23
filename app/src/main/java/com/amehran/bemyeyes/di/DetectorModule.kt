@@ -1,7 +1,6 @@
 package com.amehran.bemyeyes.di
 
 import android.content.Context
-import com.amehran.bemyeyes.data.repository.TfLiteObjectDetector
 import com.amehran.bemyeyes.domain.repository.ObjectDetector
 import dagger.Module
 import dagger.Provides
@@ -19,10 +18,8 @@ object DetectorModule {
     fun provideObjectDetector(
         @ApplicationContext context: Context
     ): ObjectDetector {
-        return TfLiteObjectDetector(
-            context = context,
-            modelPath = "efficientdet-lite4.tflite",
-            confidenceThreshold = 0.5f
+        return com.amehran.bemyeyes.data.repository.MediaPipeObjectDetector(
+            context = context
         )
     }
 }

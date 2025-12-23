@@ -12,11 +12,8 @@ class DetectionTest {
     fun `getDescription returns correct description for center close object`() {
         // Given
         val rect = mockk<RectF>()
-        every { rect.centerX() } returns 320f // Center of 640 width? No, we changed to 320 width.
-        // Wait, I changed the code to use 320f as image width in Detection.kt.
-        // So center is 160f.
-        every { rect.centerX() } returns 160f
-        every { rect.height() } returns 200f // 200/320 = 0.625 > 0.6 -> very close
+        every { rect.centerX() } returns 0.5f // Center (0.5 within 0.35-0.65)
+        every { rect.height() } returns 0.7f // 0.7 > 0.6 -> very close
         
         val detection = Detection("Person", 0.9f, rect)
 
@@ -31,8 +28,8 @@ class DetectionTest {
     fun `getDescription returns correct description for left far object`() {
         // Given
         val rect = mockk<RectF>()
-        every { rect.centerX() } returns 50f // < 320 * 0.35 = 112
-        every { rect.height() } returns 50f // 50/320 = 0.15 < 0.3 -> far (empty string)
+        every { rect.centerX() } returns 0.2f // < 0.35 -> left
+        every { rect.height() } returns 0.15f // < 0.3 -> far (empty string)
 
         val detection = Detection("Chair", 0.8f, rect)
 
@@ -47,8 +44,8 @@ class DetectionTest {
     fun `getDescription returns correct description for right close object`() {
         // Given
         val rect = mockk<RectF>()
-        every { rect.centerX() } returns 300f // > 320 * 0.65 = 208
-        every { rect.height() } returns 120f // 120/320 = 0.375 -> close (> 0.3 but < 0.6)
+        every { rect.centerX() } returns 0.8f // > 0.65 -> right
+        every { rect.height() } returns 0.4f // > 0.3 and < 0.6 -> close
 
         val detection = Detection("Table", 0.7f, rect)
 
@@ -57,5 +54,23 @@ class DetectionTest {
 
         // Then
         assertEquals("Table, to the right, close", description)
+    }
+
+    @Test
+    fun `getDescription uses distanceMeters when available`() {
+        val rect = mockk<RectF>(relaxed = true)
+        every { rect.centerX() } returns 0.5f
+        
+        // Case 1: < 2m (Very Close)
+        val d1 = Detection("car", 0.9f, rect, distanceMeters = 1.5f)
+        assertEquals("Caution: car, in front, very close", d1.getDescription())
+
+        // Case 2: < 5m (Close)
+        val d2 = Detection("person", 0.9f, rect, distanceMeters = 3.5f)
+        assertEquals("person, in front, close", d2.getDescription())
+
+        // Case 3: > 5m (Specific distance)
+        val d3 = Detection("bus", 0.9f, rect, distanceMeters = 10.0f)
+        assertEquals("Caution: bus, in front, at 10.0m", d3.getDescription())
     }
 }
