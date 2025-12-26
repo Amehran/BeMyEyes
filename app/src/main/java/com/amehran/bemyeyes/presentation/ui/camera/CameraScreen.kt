@@ -30,7 +30,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,40 +60,26 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 
 
 
-    var isCurtainMode by remember { mutableStateOf(true) }
+    val isRealtimeDetectionEnabled by viewModel.isRealtimeDetectionEnabled.collectAsState()
+    val isCurtainMode by viewModel.isCurtainMode.collectAsState()
+    val isCloudMode by viewModel.isCloudMode.collectAsState()
+    val isFarsi by viewModel.isFarsi.collectAsState()
+    
+    var showSettings by remember { mutableStateOf(false) }
 
     if (hasCamPermission) {
         Box(modifier = Modifier.fillMaxSize()) {
             CameraPreview(context, lifecycleOwner, viewModel::detect)
             
-            // Visual Boxes Overlay (Hide in curtain mode for true blackness? Or keep for debug? Hide is safer for privacy)
-            if (!isCurtainMode) {
-                DetectionOverlay(detections = detections)
-                
-                // Privacy / Curtain Mode Button (Top Right)
-                IconButton(
-                    onClick = { isCurtainMode = true },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 48.dp, end = 16.dp)
-                        .zIndex(1f) // Ensure button is always on top of detection layers
-                        .background(Color.Black.copy(alpha = 0.4f), shape = CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Lock,
-                        contentDescription = "Enter Curtain Mode",
-                        tint = Color.White
-                    )
-                }
-            } else {
-                // Curtain Mode Overlay
-                Box(
+            if (isCurtainMode) {
+                 // Curtain Mode Overlay (Active by default)
+                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onDoubleTap = { isCurtainMode = false }
+                                onDoubleTap = { viewModel.setCurtainMode(false) }
                             )
                         }
                 ) {
@@ -101,6 +90,53 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+            } else {
+                 // Normal Camera UI
+                 if (isRealtimeDetectionEnabled) {
+                     DetectionOverlay(detections = detections)
+                 }
+                
+                 // Settings Button (Top Right)
+                 IconButton(
+                    onClick = { showSettings = true },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 48.dp, end = 16.dp)
+                        .zIndex(1f)
+                        .background(Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+                 ) {
+                     Icon(
+                         imageVector = Icons.Filled.Settings,
+                         contentDescription = "Settings",
+                         tint = Color.White
+                     )
+                 }
+
+                 // Describe Scene Button (Bottom Center)
+                 Button(
+                    onClick = { viewModel.onDescribeScene() }, // Uses persistent state now
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp)
+                        .zIndex(1f)
+                 ) {
+                    Text(if (isCloudMode) "Ask Cloud AI" else "Ask Device AI")
+                 }
+            }
+            
+            // Settings Overlay
+            if (showSettings) {
+                com.amehran.bemyeyes.presentation.ui.settings.SettingsScreen(
+                    onDismiss = { showSettings = false },
+                    isCurtainMode = isCurtainMode,
+                    onCurtainModeChange = { viewModel.setCurtainMode(it) },
+                    isCloudMode = isCloudMode,
+                    onCloudModeChange = { viewModel.setCloudMode(it) },
+                    isFarsi = isFarsi,
+                    onLanguageChange = { viewModel.setLanguageFarsi(it) },
+                    isRealtimeDetectionEnabled = isRealtimeDetectionEnabled,
+                    onRealtimeDetectionChange = { viewModel.setRealtimeDetectionEnabled(it) }
+                )
             }
         }
     }
