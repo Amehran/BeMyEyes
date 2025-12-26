@@ -30,4 +30,12 @@ class AndroidTextToSpeechManager(
     override fun shutdown() {
         tts.shutdown()
     }
+
+    override fun setLanguage(languageCode: String) {
+        val locale = if (languageCode.lowercase() == "fa") Locale("fa") else Locale.US
+        val result = tts.setLanguage(locale)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            android.util.Log.e("TTS", "Language $languageCode not supported")
+        }
+    }
 }

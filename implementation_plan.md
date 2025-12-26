@@ -41,9 +41,25 @@
 
 ## Phase 5: Contextual Intelligence (TDD)
 **Goal:** Group objects into a meaningful sentence instead of shouting single words.
-- [ ] **Test (Red):** Create `SceneDescriberTest.kt`.
+- [x] **Test (Red):** Create `SceneDescriberTest.kt`.
     - Test: `describe_shouldGroupObjects_LikeChairAndTable()`.
     - Test: `describe_shouldPrioritizeUrgentObjects_AtStartOfSentinel()`.
-- [ ] **Implement (Green):** Create `SceneDescriber` class.
-- [ ] **Integration:** Replace the single-object speech logic in `CameraViewModel` with `SceneDescriber.describe(List<Detection>)`.
-- [ ] **Action:** Commit `feat: implement scene description logic`.
+- [x] **Implement (Green):** Create `SceneDescriber` class.
+- [x] **Integration:** Replace the single-object speech logic in `CameraViewModel` with `SceneDescriber.describe(List<Detection>)`.
+- [x] **Action:** Commit `feat: implement scene description logic`.
+
+## Phase 6: Curtain Mode & Performance (Completed)
+**Goal:** Optimize battery life, fix memory leaks, and add privacy mode.
+- [x] **Zero-Copy Pipeline:** Fixed memory churn by using `ImageProxy` directly.
+- [x] **Throttling:** Limited analysis to 5 FPS to reduce CPU usage.
+- [x] **Curtain Mode:** Added default-on black screen with generic object detection.
+- [x] **Safety:** Added "Obstacle" detection and calibrated distance.
+- [x] **Action:** Commit `feat: implement Curtain Mode and performance fixes`.
+
+## Phase 7: Advanced Scene Understanding (Hybrid Architecture)
+**Goal:** Empower users to choose between **Maximum Intelligence (Cloud)** and **Maximum Privacy (On-Device)**.
+- [x] **Architecture:** Define `SceneInterpreter` interface (`suspend fun describe(image): String`).
+- [x] **Cloud Impl:** Add `com.google.ai.client.generativeai` dependency and implement `CloudGeminiInterpreter` (Gemini 1.5 Flash).
+- [x] **Local Impl:** Add AICore dependencies and implement `OnDeviceGeminiInterpreter` (Gemini Nano) with fallback logic for unsupported devices.
+- [x] **UI:** Add a "Model Switch" toggle (Cloud ⚡️ / Device 🔒) in the UI.
+- [x] **Integration:** Connect the "Describe Scene" gesture/button to the selected interpreter.

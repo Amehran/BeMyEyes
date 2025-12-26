@@ -6,6 +6,9 @@ plugins {
     kotlin("kapt")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
 android {
     namespace = "com.amehran.bemyeyes"
     compileSdk {
@@ -20,6 +23,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "com.amehran.bemyeyes.HiltTestRunner"
+        
+        // Securely read API Key from local.properties
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+             localProperties.load(FileInputStream(localPropertiesFile))
+        }
+        val geminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
 
     buildTypes {
@@ -40,6 +52,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -76,6 +89,9 @@ dependencies {
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
+
+    // Gemini AI (Generative AI)
+    implementation(libs.google.generativeai)
 
     // Testing
     testImplementation(libs.junit)
