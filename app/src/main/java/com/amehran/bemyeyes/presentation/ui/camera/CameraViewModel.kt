@@ -20,7 +20,7 @@ class CameraViewModel @Inject constructor(
     private val vibrationManager: VibrationManager,
     private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker,
     private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber,
-    private val cloudInterpreter: com.amehran.bemyeyes.data.interpreter.CloudGeminiInterpreter,
+    private val backendRepository: com.amehran.bemyeyes.domain.repository.BackendRepository,
     private val deviceInterpreter: com.amehran.bemyeyes.data.interpreter.OnDeviceGeminiInterpreter
 ) : ViewModel() {
 
@@ -62,8 +62,6 @@ class CameraViewModel @Inject constructor(
 
     // Feature Toggles & Settings with Persistence
     private val prefs by lazy { 
-        // Quick & dirty safe context access for settings. Ideally use DataStore, but this is robust for checking persistence NOW.
-        // We'll use a standard name.
         com.amehran.bemyeyes.MainApplication.instance.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
     }
 
@@ -109,31 +107,47 @@ class CameraViewModel @Inject constructor(
         }
         isProcessing = true
 
-        // 1. Check if user requested a full Scene Description (Gemini)
-        // ... (Logic for Scene Description remains same) ...
+        // 1. Check if user requested a full Scene Description (Backend Analysis)
         if (shouldDescribeNextFrame) {
             shouldDescribeNextFrame = false // Consume request
-            val isCloud = descriptionModeIsCloud
             
             viewModelScope.launch {
                 try {
                     val bitmap = imageProxy.toBitmap()
-                    val lang = currentLanguageCode
-                    textToSpeechManager.setLanguage(lang)
+                    // 1. Convert to Base64
+                    val base64Image = bitmapToBase64(bitmap)
                     
-                    val analyzingText = if (lang == "fa") "در حال تحلیل..." else "Analyzing..."
-                    textToSpeechManager.speak(analyzingText)
+                    textToSpeechManager.speak("Thinking...")
                     
-                    val response = if (isCloud) {
-                        cloudInterpreter.describe(bitmap, lang)
-                    } else {
-                        deviceInterpreter.describe(bitmap, lang)
+                    // 2. Call Backend (Orchestrator)
+                    val result = backendRepository.analyzeImage(
+                        imageBase64 = base64Image,
+                        userIntent = "AUTO", // Or derive from UI state? For now, let Backend decide.
+                        telemetry = null // TODO: Add Speed/Location
+                    )
+                    
+                    result.onSuccess { analysis ->
+                         // 3. Execute Actions
+                         analysis.actions.forEach { action ->
+                             when(action.type) {
+                                 com.amehran.bemyeyes.domain.model.ActionType.TTS -> {
+                                     // Handle Language Translation if needed, or assume backend returns standard
+                                     textToSpeechManager.speak(action.content)
+                                 }
+                                 com.amehran.bemyeyes.domain.model.ActionType.HAPTIC -> {
+                                     vibrationManager.vibrateCaution()
+                                 }
+                                 else -> {}
+                             }
+                         }
+                    }.onFailure { e ->
+                        e.printStackTrace()
+                        textToSpeechManager.speak("Connection failed.")
                     }
-                    textToSpeechManager.speak(response)
-                    
+
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    textToSpeechManager.speak("Sorry, I couldn't describe the scene.")
+                    textToSpeechManager.speak("Error processing image.")
                 } finally {
                     imageProxy.close()
                     isProcessing = false
@@ -159,6 +173,19 @@ class CameraViewModel @Inject constructor(
                 isProcessing = false
             }
         }
+    }
+    
+    private fun bitmapToBase64(bitmap: Bitmap): String {
+        val outputStream = java.io.ByteArrayOutputStream()
+        // Resize if too big? Backend handles it, but better safe bandwidth
+        val resized = if (bitmap.width > 800) {
+             val aspect = bitmap.height.toFloat() / bitmap.width.toFloat()
+             Bitmap.createScaledBitmap(bitmap, 800, (800 * aspect).toInt(), true)
+        } else bitmap
+        
+        resized.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+        val byteArray = outputStream.toByteArray()
+        return android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP)
     }
 
     private suspend fun processDetections(rawDetections: List<Detection>, startTime: Long) {
