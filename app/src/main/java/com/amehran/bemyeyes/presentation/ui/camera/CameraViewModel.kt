@@ -124,7 +124,9 @@ class CameraViewModel @Inject constructor(
                     // 1. Convert to Base64
                     val base64Image = bitmapToBase64(bitmap)
                     
-                    textToSpeechManager.speak("Thinking...")
+                    // UX: Randomized Feedback
+                    val feedback = getProcessingFeedback(isFarsi.value)
+                    textToSpeechManager.speak(feedback)
                     
                     // 2. Call Backend (Orchestrator)
                     android.util.Log.d("CameraViewModel", "Sending Image to Backend...")
@@ -244,6 +246,17 @@ class CameraViewModel @Inject constructor(
 
         if (detections.any { isUrgent(it.label) }) {
             vibrationManager.vibrateCaution()
+        }
+    }
+
+    private fun getProcessingFeedback(isFarsi: Boolean): String {
+        val englishPhrases = listOf("Analyzing...", "Looking...", "Processing...", "Scanning...", "One moment...")
+        val farsiPhrases = listOf("در حال پردازش...", "نگاه میکنم...", "کمی صبر کنید...", "تصویر گرفته شد...")
+        
+        return if (isFarsi) {
+            farsiPhrases.random()
+        } else {
+            englishPhrases.random()
         }
     }
 
