@@ -5,4 +5,5 @@ interface TextToSpeechManager {
     fun stop()
     fun shutdown()
     fun setLanguage(languageCode: String)
+    fun isSpeaking(): Boolean
 }

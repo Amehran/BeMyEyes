@@ -35,6 +35,13 @@ class CameraViewModel @Inject constructor(
     private var currentLanguageCode = "en"
 
     fun onDescribeScene() {
+        // Feature: Tap to Interrupt
+        if (textToSpeechManager.isSpeaking()) {
+            textToSpeechManager.stop()
+            // Optionally cancel pending processing if we could, but for now just silencing is enough.
+            return
+        }
+
         if (shouldDescribeNextFrame) return // Already queued
         
         // Use persisted state
@@ -120,6 +127,7 @@ class CameraViewModel @Inject constructor(
                     textToSpeechManager.speak("Thinking...")
                     
                     // 2. Call Backend (Orchestrator)
+                    android.util.Log.d("CameraViewModel", "Sending Image to Backend...")
                     val result = backendRepository.analyzeImage(
                         imageBase64 = base64Image,
                         userIntent = "AUTO", // Or derive from UI state? For now, let Backend decide.
@@ -127,11 +135,13 @@ class CameraViewModel @Inject constructor(
                     )
                     
                     result.onSuccess { analysis ->
+                         android.util.Log.d("CameraViewModel", "Backend Response: $analysis")
                          // 3. Execute Actions
                          analysis.actions.forEach { action ->
                              when(action.type) {
                                  com.amehran.bemyeyes.domain.model.ActionType.TTS -> {
                                      // Handle Language Translation if needed, or assume backend returns standard
+                                     android.util.Log.d("CameraViewModel", "Action TTS: ${action.content}")
                                      textToSpeechManager.speak(action.content)
                                  }
                                  com.amehran.bemyeyes.domain.model.ActionType.HAPTIC -> {
@@ -141,11 +151,13 @@ class CameraViewModel @Inject constructor(
                              }
                          }
                     }.onFailure { e ->
+                        android.util.Log.e("CameraViewModel", "Backend Error", e)
                         e.printStackTrace()
                         textToSpeechManager.speak("Connection failed.")
                     }
 
                 } catch (e: Exception) {
+                    android.util.Log.e("CameraViewModel", "Processing Error", e)
                     e.printStackTrace()
                     textToSpeechManager.speak("Error processing image.")
                 } finally {
