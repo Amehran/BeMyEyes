@@ -24,7 +24,7 @@ class DescriberAgent(BaseAgent):
         raw_response = await llm_gateway.generate_response(
             system_prompt=self.SYSTEM_PROMPT,
             image_data=image_base64,
-            model_name="gemini-1.5-flash-latest"
+            model_name="gemini-flash-latest"
         )
         
         try:
