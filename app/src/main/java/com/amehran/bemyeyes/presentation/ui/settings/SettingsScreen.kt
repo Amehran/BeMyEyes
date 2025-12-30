@@ -19,7 +19,9 @@ fun SettingsScreen(
     isFarsi: Boolean,
     onLanguageChange: (Boolean) -> Unit,
     isRealtimeDetectionEnabled: Boolean,
-    onRealtimeDetectionChange: (Boolean) -> Unit
+    onRealtimeDetectionChange: (Boolean) -> Unit,
+    isPowerSaverMode: Boolean,
+    onPowerSaverChange: (Boolean) -> Unit
 ) {
     androidx.activity.compose.BackHandler {
         onDismiss()
@@ -64,6 +66,33 @@ fun SettingsScreen(
                 Switch(
                     checked = isCurtainMode,
                     onCheckedChange = onCurtainModeChange
+                )
+            }
+
+            HorizontalDivider()
+            
+            // Power Saver Mode Setting
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Power Saver",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Lowers resolution to save battery",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                Switch(
+                    checked = isPowerSaverMode,
+                    onCheckedChange = onPowerSaverChange
                 )
             }
 

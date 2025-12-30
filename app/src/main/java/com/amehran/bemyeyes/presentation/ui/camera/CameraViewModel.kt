@@ -107,6 +107,14 @@ class CameraViewModel @Inject constructor(
         prefs.edit().putBoolean("is_farsi", enabled).apply()
     }
 
+    private val _isPowerSaverMode = MutableStateFlow(prefs.getBoolean("power_saver_mode", true)) // Default to True for battery
+    val isPowerSaverMode = _isPowerSaverMode.asStateFlow()
+
+    fun setPowerSaverMode(enabled: Boolean) {
+        _isPowerSaverMode.value = enabled
+        prefs.edit().putBoolean("power_saver_mode", enabled).apply()
+    }
+
     fun detect(imageProxy: androidx.camera.core.ImageProxy) {
         if (isProcessing) {
             imageProxy.close()

@@ -64,27 +64,35 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
     val isCurtainMode by viewModel.isCurtainMode.collectAsState()
     val isCloudMode by viewModel.isCloudMode.collectAsState()
     val isFarsi by viewModel.isFarsi.collectAsState()
+    val isPowerSaverMode by viewModel.isPowerSaverMode.collectAsState()
     
     var showSettings by remember { mutableStateOf(false) }
 
     if (hasCamPermission) {
         Box(modifier = Modifier.fillMaxSize()) {
-            CameraPreview(context, lifecycleOwner, viewModel::detect)
+            CameraPreview(context, lifecycleOwner, isPowerSaverMode, viewModel::detect)
             
             if (isCurtainMode) {
-                 // Curtain Mode Overlay (Active by default)
+                 // Curtain Mode Overlay
                  Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onDoubleTap = { viewModel.setCurtainMode(false) }
+                                onDoubleTap = { 
+                                    android.util.Log.d("CameraScreen", "CurtainMode: Double Tap -> Exit Curtain")
+                                    viewModel.setCurtainMode(false) 
+                                },
+                                onTap = {
+                                    android.util.Log.d("CameraScreen", "CurtainMode: Single Tap -> Describe Scene")
+                                    viewModel.onDescribeScene()
+                                }
                             )
                         }
                 ) {
                     Text(
-                        text = "Curtain Mode Active\nDouble tap to exit",
+                        text = "Curtain Mode Active\nDouble tap to exit\nTap to Describe",
                         color = Color.DarkGray,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.align(Alignment.Center)
@@ -92,35 +100,53 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
                 }
             } else {
                  // Normal Camera UI
-                 if (isRealtimeDetectionEnabled) {
-                     DetectionOverlay(detections = detections)
-                 }
-                
-                 // Settings Button (Top Right)
-                 IconButton(
-                    onClick = { showSettings = true },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 48.dp, end = 16.dp)
-                        .zIndex(1f)
-                        .background(Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+                 // Wrap in Box to capture gestures over everything (except buttons if z-indexed higher)
+                 Box(
+                     modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    android.util.Log.d("CameraScreen", "NormalMode: Double Tap -> Enter Curtain")
+                                    viewModel.setCurtainMode(true)
+                                },
+                                onTap = {
+                                    android.util.Log.d("CameraScreen", "NormalMode: Tap -> Describe Scene")
+                                    viewModel.onDescribeScene()
+                                }
+                            )
+                        }
                  ) {
-                     Icon(
-                         imageVector = Icons.Filled.Settings,
-                         contentDescription = "Settings",
-                         tint = Color.White
-                     )
-                 }
+                     if (isRealtimeDetectionEnabled) {
+                         DetectionOverlay(detections = detections)
+                     }
+                    
+                     // Settings Button (Top Right)
+                     IconButton(
+                        onClick = { showSettings = true },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 48.dp, end = 16.dp)
+                            .zIndex(1f) // Ensure button is clickable above the gesture box
+                            .background(Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+                     ) {
+                         Icon(
+                             imageVector = Icons.Filled.Settings,
+                             contentDescription = "Settings",
+                             tint = Color.White
+                         )
+                     }
 
-                 // Describe Scene Button (Bottom Center)
-                 Button(
-                    onClick = { viewModel.onDescribeScene() }, // Uses persistent state now
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 32.dp)
-                        .zIndex(1f)
-                 ) {
-                    Text(if (isCloudMode) "Ask Cloud AI" else "Ask Device AI")
+                     // Explicit Button fallback (Optional, but kept for visual users)
+                     Button(
+                        onClick = { viewModel.onDescribeScene() },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 32.dp)
+                            .zIndex(1f)
+                     ) {
+                        Text(if (isCloudMode) "Ask Cloud AI" else "Ask Device AI")
+                     }
                  }
             }
             
@@ -135,7 +161,9 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
                     isFarsi = isFarsi,
                     onLanguageChange = { viewModel.setLanguageFarsi(it) },
                     isRealtimeDetectionEnabled = isRealtimeDetectionEnabled,
-                    onRealtimeDetectionChange = { viewModel.setRealtimeDetectionEnabled(it) }
+                    onRealtimeDetectionChange = { viewModel.setRealtimeDetectionEnabled(it) },
+                    isPowerSaverMode = isPowerSaverMode,
+                    onPowerSaverChange = { viewModel.setPowerSaverMode(it) }
                 )
             }
         }
@@ -146,6 +174,7 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 fun CameraPreview(
     context: Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
+    isPowerSaverMode: Boolean,
     onDetect: (androidx.camera.core.ImageProxy) -> Unit
 ) {
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
@@ -156,18 +185,23 @@ fun CameraPreview(
         }
     }
 
-    AndroidView(
-        factory = {
-            val previewView = PreviewView(it)
-            previewView.keepScreenOn = true
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(it)
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build()
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    // Rebuild camera stack when Power Saver Mode toggles
+    key(isPowerSaverMode) {
+        AndroidView(
+            factory = {
+                val previewView = PreviewView(it)
+                previewView.keepScreenOn = true
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(it)
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build()
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-                val imageAnalysis = ImageAnalysis.Builder()
-                    .setTargetResolution(android.util.Size(1280, 720))
+                    // Power Saver: VGA vs HD
+                    val targetSize = if (isPowerSaverMode) android.util.Size(640, 480) else android.util.Size(1280, 720)
+
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setTargetResolution(targetSize)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .build()
@@ -205,4 +239,5 @@ fun CameraPreview(
         },
         modifier = Modifier.fillMaxSize().testTag("camera_preview")
     )
+    }
 }
