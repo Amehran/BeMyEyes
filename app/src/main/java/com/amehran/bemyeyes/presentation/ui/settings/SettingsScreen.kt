@@ -21,7 +21,9 @@ fun SettingsScreen(
     isRealtimeDetectionEnabled: Boolean,
     onRealtimeDetectionChange: (Boolean) -> Unit,
     isPowerSaverMode: Boolean,
-    onPowerSaverChange: (Boolean) -> Unit
+    onPowerSaverChange: (Boolean) -> Unit,
+    isOutdoorMode: Boolean,
+    onOutdoorModeChange: (Boolean) -> Unit
 ) {
     androidx.activity.compose.BackHandler {
         onDismiss()
@@ -66,6 +68,33 @@ fun SettingsScreen(
                 Switch(
                     checked = isCurtainMode,
                     onCheckedChange = onCurtainModeChange
+                )
+            }
+
+            HorizontalDivider()
+            
+            // Environment Setting
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Environment",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = if (isOutdoorMode) "Outdoor (Navigation Focus)" else "Indoor (Object Focus)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                Switch(
+                    checked = isOutdoorMode,
+                    onCheckedChange = onOutdoorModeChange
                 )
             }
 

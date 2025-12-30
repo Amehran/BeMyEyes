@@ -65,6 +65,7 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
     val isCloudMode by viewModel.isCloudMode.collectAsState()
     val isFarsi by viewModel.isFarsi.collectAsState()
     val isPowerSaverMode by viewModel.isPowerSaverMode.collectAsState()
+    val isOutdoorMode by viewModel.isOutdoorMode.collectAsState()
     
     var showSettings by remember { mutableStateOf(false) }
 
@@ -163,7 +164,9 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
                     isRealtimeDetectionEnabled = isRealtimeDetectionEnabled,
                     onRealtimeDetectionChange = { viewModel.setRealtimeDetectionEnabled(it) },
                     isPowerSaverMode = isPowerSaverMode,
-                    onPowerSaverChange = { viewModel.setPowerSaverMode(it) }
+                    onPowerSaverChange = { viewModel.setPowerSaverMode(it) },
+                    isOutdoorMode = isOutdoorMode,
+                    onOutdoorModeChange = { viewModel.setOutdoorMode(it) }
                 )
             }
         }

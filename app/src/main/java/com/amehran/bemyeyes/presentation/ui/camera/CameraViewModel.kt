@@ -115,6 +115,14 @@ class CameraViewModel @Inject constructor(
         prefs.edit().putBoolean("power_saver_mode", enabled).apply()
     }
 
+    private val _isOutdoorMode = MutableStateFlow(prefs.getBoolean("is_outdoor", false)) // Default Indoor
+    val isOutdoorMode = _isOutdoorMode.asStateFlow()
+
+    fun setOutdoorMode(enabled: Boolean) {
+        _isOutdoorMode.value = enabled
+        prefs.edit().putBoolean("is_outdoor", enabled).apply()
+    }
+
     fun detect(imageProxy: androidx.camera.core.ImageProxy) {
         if (isProcessing) {
             imageProxy.close()
@@ -138,10 +146,17 @@ class CameraViewModel @Inject constructor(
                     
                     // 2. Call Backend (Orchestrator)
                     android.util.Log.d("CameraViewModel", "Sending Image to Backend...")
+                    
+                    val locationType = if (isOutdoorMode.value) "OUTDOOR" else "INDOOR"
+                    val telemetryData = com.amehran.bemyeyes.data.remote.model.Telemetry(
+                        speedMps = 0.0,
+                        locationType = locationType
+                    )
+
                     val result = backendRepository.analyzeImage(
                         imageBase64 = base64Image,
                         userIntent = "AUTO", // Or derive from UI state? For now, let Backend decide.
-                        telemetry = null // TODO: Add Speed/Location
+                        telemetry = telemetryData 
                     )
                     
                     result.onSuccess { analysis ->
