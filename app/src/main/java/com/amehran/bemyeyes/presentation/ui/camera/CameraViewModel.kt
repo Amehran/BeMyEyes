@@ -18,6 +18,7 @@ class CameraViewModel @Inject constructor(
     private val objectDetector: ObjectDetector,
     private val textToSpeechManager: TextToSpeechManager,
     private val vibrationManager: VibrationManager,
+    private val speechManager: com.amehran.bemyeyes.domain.repository.SpeechManager,
     private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker,
     private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber,
     private val backendRepository: com.amehran.bemyeyes.domain.repository.BackendRepository,
@@ -26,6 +27,11 @@ class CameraViewModel @Inject constructor(
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
     val detections = _detections.asStateFlow()
+
+    private val _isListening = MutableStateFlow(false)
+    val isListening = _isListening.asStateFlow()
+    
+    private var activeAudioQuery: String? = null
 
     private var isProcessing = false
     
@@ -49,7 +55,47 @@ class CameraViewModel @Inject constructor(
         currentLanguageCode = if (isFarsi.value) "fa" else "en"
         
         shouldDescribeNextFrame = true
+        activeAudioQuery = null // Clear any old query for simple tap
         vibrationManager.vibrateCaution() // Haptic feedback acknowledging request
+    }
+
+    fun startListening() {
+        if (_isListening.value) return
+        
+        // Stop TTS if speaking
+        if (textToSpeechManager.isSpeaking()) {
+            textToSpeechManager.stop()
+        }
+
+        _isListening.value = true
+        vibrationManager.vibrateClick()
+        
+        speechManager.startListening(
+            onResult = { text ->
+                if (text.isNotBlank()) {
+                    android.util.Log.d("CameraViewModel", "Speech recognized: $text")
+                    activeAudioQuery = text
+                    shouldDescribeNextFrame = true // Trigger analysis with this query
+                    vibrationManager.vibrateCaution()
+                }
+                _isListening.value = false
+            },
+            onError = { error ->
+                android.util.Log.e("CameraViewModel", "Speech Error: $error")
+                _isListening.value = false
+                textToSpeechManager.speak("Didn't catch that.")
+            }
+        )
+    }
+
+    fun stopListening() {
+        if (_isListening.value) {
+            speechManager.stopListening()
+            // State update happens in callback or we force it if needed, 
+            // but let's wait for callback to ensure we get results or error.
+            // Actually, Android Speech Recognizer might not callback if stopped abruptly without silence?
+            // Usually valid usage is: stopListening() -> waits for result processing.
+        }
     }
 
     fun detect(bitmap: Bitmap) {
@@ -123,6 +169,15 @@ class CameraViewModel @Inject constructor(
         prefs.edit().putBoolean("is_outdoor", enabled).apply()
     }
 
+    private val _isTtsEnabled = MutableStateFlow(prefs.getBoolean("is_tts_enabled", true))
+    val isTtsEnabled = _isTtsEnabled.asStateFlow()
+
+    fun setTtsEnabled(enabled: Boolean) {
+        _isTtsEnabled.value = enabled
+        prefs.edit().putBoolean("is_tts_enabled", enabled).apply()
+        if (enabled) textToSpeechManager.speak("Voice Feedback Enabled")
+    }
+
     fun detect(imageProxy: androidx.camera.core.ImageProxy) {
         if (isProcessing) {
             imageProxy.close()
@@ -155,9 +210,13 @@ class CameraViewModel @Inject constructor(
 
                     val result = backendRepository.analyzeImage(
                         imageBase64 = base64Image,
-                        userIntent = "AUTO", // Or derive from UI state? For now, let Backend decide.
-                        telemetry = telemetryData 
+                        userIntent = if (activeAudioQuery != null) "GENERAL" else "AUTO",
+                        telemetry = telemetryData,
+                        audioQuery = activeAudioQuery
                     )
+                    
+                    // Reset query after using it
+                    activeAudioQuery = null
                     
                     result.onSuccess { analysis ->
                          android.util.Log.d("CameraViewModel", "Backend Response: $analysis")
@@ -167,10 +226,34 @@ class CameraViewModel @Inject constructor(
                                  com.amehran.bemyeyes.domain.model.ActionType.TTS -> {
                                      // Handle Language Translation if needed, or assume backend returns standard
                                      android.util.Log.d("CameraViewModel", "Action TTS: ${action.content}")
-                                     textToSpeechManager.speak(action.content)
+                                     _lastDescription.value = action.content
+                                     if (_isTtsEnabled.value) {
+                                         textToSpeechManager.speak(action.content)
+                                     }
                                  }
                                  com.amehran.bemyeyes.domain.model.ActionType.HAPTIC -> {
                                      vibrationManager.vibrateCaution()
+                                 }
+                                 com.amehran.bemyeyes.domain.model.ActionType.SETTING_UPDATE -> {
+                                     android.util.Log.d("CameraViewModel", "Received SETTING_UPDATE: ${action.content}")
+                                     val parts = action.content.split("=")
+                                     if (parts.size == 2) {
+                                         val key = parts[0].trim() // Trim just in case
+                                         val value = parts[1].trim().toBoolean()
+                                         android.util.Log.d("CameraViewModel", "Parsed Setting: $key = $value")
+                                         when(key) {
+                                             "OUTDOOR" -> {
+                                                 android.util.Log.d("CameraViewModel", "Setting Outdoor Mode to $value")
+                                                 setOutdoorMode(value)
+                                             }
+                                             "IS_TTS_ENABLED" -> {
+                                                 setTtsEnabled(value)
+                                             }
+                                             "REALTIME_ENABLED" -> {
+                                                 setRealtimeDetectionEnabled(value)
+                                             }
+                                         }
+                                     }
                                  }
                                  else -> {}
                              }
@@ -260,11 +343,19 @@ class CameraViewModel @Inject constructor(
         return setOf("car", "bus", "truck", "traffic light", "stop sign", "fire hydrant", "Obstacle").contains(label)
     }
 
+    private val _lastDescription = MutableStateFlow<String?>(null)
+    val lastDescription = _lastDescription.asStateFlow()
+
     private fun speakScene(detections: List<Detection>) {
         if (detections.isEmpty()) return
         
         val message = sceneDescriber.describe(detections)
-        textToSpeechManager.speak(message)
+        _lastDescription.value = message
+        
+        if (_isTtsEnabled.value) {
+            textToSpeechManager.speak(message)
+        }
+        
         lastSceneSpokenTime = System.currentTimeMillis()
 
         if (detections.any { isUrgent(it.label) }) {

@@ -7,6 +7,7 @@ interface BackendRepository {
     suspend fun analyzeImage(
         imageBase64: String, 
         userIntent: String,
-        telemetry: Telemetry?
+        telemetry: Telemetry?,
+        audioQuery: String? = null
     ): Result<SceneAnalysis>
 }

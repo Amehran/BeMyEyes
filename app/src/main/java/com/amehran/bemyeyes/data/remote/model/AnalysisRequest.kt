@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 data class AnalysisRequest(
     @SerializedName("image_base64") val imageBase64: String,
     @SerializedName("user_intent") val userIntent: String, // "AUTO", "NAVIGATION", "READING", "GENERAL"
-    @SerializedName("telemetry") val telemetry: Telemetry? = null
+    @SerializedName("telemetry") val telemetry: Telemetry? = null,
+    @SerializedName("audio_query") val audioQuery: String? = null
 )
 
 data class Telemetry(

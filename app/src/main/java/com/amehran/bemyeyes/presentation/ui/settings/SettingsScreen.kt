@@ -1,12 +1,15 @@
 package com.amehran.bemyeyes.presentation.ui.settings
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -23,7 +26,9 @@ fun SettingsScreen(
     isPowerSaverMode: Boolean,
     onPowerSaverChange: (Boolean) -> Unit,
     isOutdoorMode: Boolean,
-    onOutdoorModeChange: (Boolean) -> Unit
+    onOutdoorModeChange: (Boolean) -> Unit,
+    isTtsEnabled: Boolean,
+    onTtsChange: (Boolean) -> Unit
 ) {
     androidx.activity.compose.BackHandler {
         onDismiss()
@@ -46,168 +51,67 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // Curtain Mode Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Curtain Mode",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Black screen for privacy & battery",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isCurtainMode,
-                    onCheckedChange = onCurtainModeChange
-                )
-            }
+            // Enable App Voice (TTS)
+            SettingsSwitchRow(
+                title = "Enable App Voice (TTS)",
+                subtitle = if (isTtsEnabled) "App speaks descriptions" else "Silent (For Screen Reader Users)",
+                checked = isTtsEnabled,
+                onCheckedChange = onTtsChange
+            )
+            HorizontalDivider()
 
+            // Curtain Mode Setting
+            SettingsSwitchRow(
+                title = "Curtain Mode",
+                subtitle = "Black screen for privacy & battery",
+                checked = isCurtainMode,
+                onCheckedChange = onCurtainModeChange
+            )
             HorizontalDivider()
             
             // Environment Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Environment",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = if (isOutdoorMode) "Outdoor (Navigation Focus)" else "Indoor (Object Focus)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isOutdoorMode,
-                    onCheckedChange = onOutdoorModeChange
-                )
-            }
-
+            SettingsSwitchRow(
+                title = "Environment",
+                subtitle = if (isOutdoorMode) "Outdoor (Navigation Focus)" else "Indoor (Object Focus)",
+                checked = isOutdoorMode,
+                onCheckedChange = onOutdoorModeChange
+            )
             HorizontalDivider()
             
             // Power Saver Mode Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Power Saver",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Lowers resolution to save battery",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isPowerSaverMode,
-                    onCheckedChange = onPowerSaverChange
-                )
-            }
-
+            SettingsSwitchRow(
+                title = "Power Saver",
+                subtitle = "Lowers resolution to save battery",
+                checked = isPowerSaverMode,
+                onCheckedChange = onPowerSaverChange
+            )
             HorizontalDivider()
 
             // AI Model Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "AI Model",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = if (isCloudMode) "Cloud (More Intelligent)" else "Local (More Private)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isCloudMode,
-                    onCheckedChange = onCloudModeChange,
-                    thumbContent = {
-                        // Optional: Icons on thumb
-                    }
-                )
-            }
-
+            SettingsSwitchRow(
+                title = "AI Model",
+                subtitle = if (isCloudMode) "Cloud (More Intelligent)" else "Local (More Private)",
+                checked = isCloudMode,
+                onCheckedChange = onCloudModeChange
+            )
             HorizontalDivider()
 
             // Language Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Language / زبان",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = if (isFarsi) "Farsi (Persian)" else "English",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isFarsi,
-                    onCheckedChange = onLanguageChange
-                )
-            }
-            
+            SettingsSwitchRow(
+                title = "Language / زبان",
+                subtitle = if (isFarsi) "Farsi (Persian)" else "English",
+                checked = isFarsi,
+                onCheckedChange = onLanguageChange
+            )
             HorizontalDivider()
 
             // Realtime Detection Setting
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Realtime Detection",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Automatically detect objects in camera view",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                Switch(
-                    checked = isRealtimeDetectionEnabled,
-                    onCheckedChange = onRealtimeDetectionChange
-                )
-            }
+            SettingsSwitchRow(
+                title = "Realtime Detection",
+                subtitle = "Automatically detect objects in camera view",
+                checked = isRealtimeDetectionEnabled,
+                onCheckedChange = onRealtimeDetectionChange
+            )
             
             Spacer(modifier = Modifier.weight(1f))
             
@@ -218,5 +122,42 @@ fun SettingsScreen(
                 Text("Close")
             }
         }
+    }
+}
+
+@Composable
+fun SettingsSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = checked,
+                onValueChange = onCheckedChange,
+                role = Role.Switch
+            )
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = null // Handled by toggleable modifier on Row
+        )
     }
 }

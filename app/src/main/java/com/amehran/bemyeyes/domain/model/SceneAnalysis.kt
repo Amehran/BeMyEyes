@@ -13,5 +13,6 @@ data class SceneAction(
 enum class ActionType {
     TTS,
     HAPTIC,
+    SETTING_UPDATE,
     UNKNOWN
 }

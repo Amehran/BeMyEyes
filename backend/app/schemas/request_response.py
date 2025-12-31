@@ -12,7 +12,7 @@ class AnalysisRequest(BaseModel):
     audio_query: Optional[str] = None
 
 class Action(BaseModel):
-    type: Literal["TTS", "HAPTIC"]
+    type: Literal["TTS", "HAPTIC", "SETTING_UPDATE"]
     content: str # Speech text or Haptic pattern name
 
 class AnalysisResponse(BaseModel):

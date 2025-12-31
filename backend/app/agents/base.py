@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.schemas.request_response import AnalysisResponse
+from app.schemas.request_response import AnalysisResponse, AnalysisRequest
 
 class BaseAgent(ABC):
     """
@@ -8,7 +8,7 @@ class BaseAgent(ABC):
     """
     
     @abstractmethod
-    async def analyze(self, image_base64: str) -> AnalysisResponse:
+    async def analyze(self, request: AnalysisRequest) -> AnalysisResponse:
         """
         Main entry point for the agent.
         Must return a structured AnalysisResponse.

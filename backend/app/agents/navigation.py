@@ -1,28 +1,24 @@
 from app.services.llm_gateway import llm_gateway
-from app.schemas.request_response import Action, AnalysisResponse
+from app.schemas.request_response import Action, AnalysisResponse, AnalysisRequest
 from app.agents.base import BaseAgent
 import json
 
 class NavigationAgent(BaseAgent):
     SYSTEM_PROMPT = """
-    You are a Safety Guide for a blind person. Analyze this image from their perspective.
-    Identify:
-    1. The immediate path ahead (clear or blocked?).
-    2. Major obstacles (poles, cars, holes).
-    3. Directions (e.g., "Veer left").
-    
+    You are a polite Navigation Assistant for a blind user.
+    Identify safe paths, obstacles, and signs.
     Output strictly valid JSON:
-    {
-      "speech": "Path clear. Walk forward.",
-      "haptic": "SAFE_PULSE" // or "STOP", "CAUTION"
-    }
+    { "speech": "Walk forward 5 steps.", "haptic": "INFO_PULSE" }
     """
     
-    async def analyze(self, image_base64: str) -> AnalysisResponse:
-        # Call Gemini Flash for speed
+    async def analyze(self, request: AnalysisRequest) -> AnalysisResponse:
+        system_prompt = self.SYSTEM_PROMPT
+        if request.telemetry and request.telemetry.speed_mps > 1.0:
+            system_prompt += "\nUser is moving fast. Be concise and warn of immediate dangers."
+
         raw_response = await llm_gateway.generate_response(
-            system_prompt=self.SYSTEM_PROMPT,
-            image_data=image_base64,
+            system_prompt=system_prompt,
+            image_data=request.image_base64,
             model_name="gemini-flash-latest"
         )
         

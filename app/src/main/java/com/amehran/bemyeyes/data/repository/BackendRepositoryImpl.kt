@@ -16,14 +16,16 @@ class BackendRepositoryImpl @Inject constructor(
     override suspend fun analyzeImage(
         imageBase64: String, 
         userIntent: String,
-        telemetry: Telemetry?
+        telemetry: Telemetry?,
+        audioQuery: String?
     ): Result<SceneAnalysis> {
         return try {
             val response = api.analyzeImage(
                 AnalysisRequest(
                     imageBase64 = imageBase64,
                     userIntent = userIntent,
-                    telemetry = telemetry
+                    telemetry = telemetry,
+                    audioQuery = audioQuery
                 )
             )
             
@@ -33,6 +35,7 @@ class BackendRepositoryImpl @Inject constructor(
                     type = when(actionDto.type.uppercase()) {
                         "TTS" -> ActionType.TTS
                         "HAPTIC" -> ActionType.HAPTIC
+                        "SETTING_UPDATE" -> ActionType.SETTING_UPDATE
                         else -> ActionType.UNKNOWN
                     },
                     content = actionDto.content

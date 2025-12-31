@@ -29,4 +29,12 @@ object ManagerModule {
     ): com.amehran.bemyeyes.domain.repository.VibrationManager {
         return com.amehran.bemyeyes.data.repository.SystemVibrationManager(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideSpeechManager(
+        @ApplicationContext context: Context
+    ): com.amehran.bemyeyes.domain.repository.SpeechManager {
+        return com.amehran.bemyeyes.data.repository.AndroidSpeechManager(context)
+    }
 }

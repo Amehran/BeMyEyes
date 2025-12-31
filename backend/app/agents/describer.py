@@ -1,5 +1,5 @@
 from app.services.llm_gateway import llm_gateway
-from app.schemas.request_response import Action, AnalysisResponse
+from app.schemas.request_response import Action, AnalysisResponse, AnalysisRequest
 from app.agents.base import BaseAgent
 import json
 
@@ -19,11 +19,15 @@ class DescriberAgent(BaseAgent):
     }
     """
     
-    async def analyze(self, image_base64: str) -> AnalysisResponse:
+    async def analyze(self, request: AnalysisRequest) -> AnalysisResponse:
+        current_prompt = self.SYSTEM_PROMPT
+        if request.audio_query:
+            current_prompt += f"\nIMPORTANT: The user asked using their voice: '{request.audio_query}'. \nAnswer their question directly based on the image."
+
         # Use simple Flash model. For V2 we might upgrade this to Pro.
         raw_response = await llm_gateway.generate_response(
-            system_prompt=self.SYSTEM_PROMPT,
-            image_data=image_base64,
+            system_prompt=current_prompt,
+            image_data=request.image_base64,
             model_name="gemini-flash-latest"
         )
         
