@@ -14,7 +14,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Secret: Your Google Cloud Project ID
   REGION: us-central1 # Change if needed
   SERVICE_NAME: bemyeyes-backend
-  REPO_NAME: bemyeyes-backend # Artifact Registry Repo Name
+  REPO_NAME: bemyeyes # Artifact Registry Repo Name
 
 jobs:
   deploy:
