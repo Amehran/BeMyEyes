@@ -38,4 +38,8 @@ class AndroidTextToSpeechManager(
             android.util.Log.e("TTS", "Language $languageCode not supported")
         }
     }
+
+    override fun isSpeaking(): Boolean {
+        return tts.isSpeaking
+    }
 }

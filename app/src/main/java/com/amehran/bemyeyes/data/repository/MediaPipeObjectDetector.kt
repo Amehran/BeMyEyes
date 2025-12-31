@@ -82,10 +82,11 @@ class MediaPipeObjectDetector(
 
     override suspend fun detect(imageProxy: androidx.camera.core.ImageProxy): List<Detection> {
         val detector = objectDetector ?: return emptyList()
-        val mediaImage = imageProxy.image ?: return emptyList()
-
-        // Zero-copy: Wrap android.media.Image directly
-        val mpImage = com.google.mediapipe.framework.image.MediaImageBuilder(mediaImage).build()
+        
+        // Convert to Bitmap to handle padding/strides correctly
+        // This avoids the "buffer size mismatch" error in MediaPipe
+        val bitmap = imageProxy.toBitmap()
+        val mpImage = BitmapImageBuilder(bitmap).build()
 
         // Handle Rotation
         val imageProcessingOptions = com.google.mediapipe.tasks.vision.core.ImageProcessingOptions.builder()
@@ -95,12 +96,8 @@ class MediaPipeObjectDetector(
         // Inference
         val detectionResult = detector.detect(mpImage, imageProcessingOptions)
 
-        // For normalization, we need the "rotated" width/height because the boxes will be relative to the rotated frame of reference?
-        // Actually, MediaPipe returns boxes relative to the unrotated image if rotation is handled via options?
-        // No, if we pass rotation, MP rotates the input virtualy. The output boxes are relative to the *upright* execution.
-        // So strict width/height depends on rotation.
-        val width = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.width else imageProxy.height
-        val height = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.height else imageProxy.width
+        val width = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) bitmap.width else bitmap.height
+        val height = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) bitmap.height else bitmap.width
 
         return processResult(detectionResult, width, height)
     }

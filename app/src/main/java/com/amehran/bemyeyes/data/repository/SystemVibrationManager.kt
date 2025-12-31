@@ -30,4 +30,13 @@ class SystemVibrationManager(private val context: Context) : VibrationManager {
             vibrator.vibrate(longArrayOf(0, 100, 100, 100), -1)
         }
     }
+
+    override fun vibrateClick() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(50)
+        }
+    }
 }

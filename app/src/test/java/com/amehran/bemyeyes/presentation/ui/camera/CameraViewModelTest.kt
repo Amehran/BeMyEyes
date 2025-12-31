@@ -28,8 +28,11 @@ class CameraViewModelTest {
     private val objectDetector: ObjectDetector = mockk(relaxed = true)
     private val textToSpeechManager: TextToSpeechManager = mockk(relaxed = true)
     private val vibrationManager: VibrationManager = mockk(relaxed = true)
+    private val speechManager: com.amehran.bemyeyes.domain.repository.SpeechManager = mockk(relaxed = true)
     private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker = mockk(relaxed = true)
     private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber = mockk(relaxed = true)
+    private val backendRepository: com.amehran.bemyeyes.domain.repository.BackendRepository = mockk(relaxed = true)
+    private val deviceInterpreter: com.amehran.bemyeyes.data.interpreter.OnDeviceGeminiInterpreter = mockk(relaxed = true)
     private lateinit var viewModel: CameraViewModel
 
     @Before
@@ -50,7 +53,16 @@ class CameraViewModelTest {
             list.joinToString(" and ") { it.label } + " ahead"
         }
         
-        viewModel = CameraViewModel(objectDetector, textToSpeechManager, vibrationManager, detectionTracker, sceneDescriber)
+        viewModel = CameraViewModel(
+            objectDetector,
+            textToSpeechManager,
+            vibrationManager,
+            speechManager,
+            detectionTracker,
+            sceneDescriber,
+            backendRepository,
+            deviceInterpreter
+        )
     }
 
     @Test
