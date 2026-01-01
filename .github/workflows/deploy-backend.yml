@@ -53,7 +53,7 @@ jobs:
         with:
           service: '${{ env.SERVICE_NAME }}'
           region: '${{ env.REGION }}'
-          image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.GITHUB_SHA }}'
+          image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}'
           # Allow unauthenticated invocations (public API). Remove for internal-only.
           flags: '--allow-unauthenticated'
           env_vars: |
