@@ -1,0 +1,26 @@
+
+# Git and Docker ignore files
+.git
+.gitignore
+.dockerignore
+.github
+.idea
+.vscode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment
+venv
+env
+.env
+local_debug.log
+
+# Android App Code (We only want the backend in this container)
+app/
+gradle/
+build/
+.gradle/
+*.properties
+*.gradle.kts

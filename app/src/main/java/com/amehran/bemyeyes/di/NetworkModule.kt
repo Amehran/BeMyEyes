@@ -40,9 +40,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        // Ensure the URL ends with / if it doesn't already, though BuildConfig should have it.
+        val BASE_URL = "https://bemyeyes-backend-xz4vizivoq-uc.a.run.app/" // Cloud Run URL
         // For safety we can trim and add it, or just trust the config.
-        val baseUrl = if (BuildConfig.BACKEND_URL.endsWith("/")) BuildConfig.BACKEND_URL else "${BuildConfig.BACKEND_URL}/"
+        val baseUrl = if (BASE_URL.endsWith("/")) BASE_URL else "${BASE_URL}/"
         
         return Retrofit.Builder()
             .baseUrl(baseUrl)
