@@ -9,4 +9,4 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
-    return {"message": "BeMyEyes Backend is Running (V1)"}
+    return {"message": "BeMyEyes Backend (V2 Farsi Support)"}
