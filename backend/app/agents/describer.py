@@ -24,6 +24,9 @@ class DescriberAgent(BaseAgent):
         if request.audio_query:
             current_prompt += f"\nIMPORTANT: The user asked using their voice: '{request.audio_query}'. \nAnswer their question directly based on the image."
 
+        if request.language and request.language.lower() == "fa":
+             current_prompt += "\nOUTPUT INSTRUCTION: The user speaks Persian (Farsi). Ensure the 'speech' field in the JSON response is written in natural, fluent Persian."
+
         # Use simple Flash model. For V2 we might upgrade this to Pro.
         raw_response = await llm_gateway.generate_response(
             system_prompt=current_prompt,

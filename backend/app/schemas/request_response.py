@@ -10,6 +10,7 @@ class AnalysisRequest(BaseModel):
     user_intent: Literal["AUTO", "NAVIGATION", "READING", "GENERAL"] = "AUTO"
     telemetry: Optional[Telemetry] = None
     audio_query: Optional[str] = None
+    language: Optional[str] = "en"
 
 class Action(BaseModel):
     type: Literal["TTS", "HAPTIC", "SETTING_UPDATE"]

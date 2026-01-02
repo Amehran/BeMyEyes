@@ -6,7 +6,8 @@ data class AnalysisRequest(
     @SerializedName("image_base64") val imageBase64: String,
     @SerializedName("user_intent") val userIntent: String, // "AUTO", "NAVIGATION", "READING", "GENERAL"
     @SerializedName("telemetry") val telemetry: Telemetry? = null,
-    @SerializedName("audio_query") val audioQuery: String? = null
+    @SerializedName("audio_query") val audioQuery: String? = null,
+    @SerializedName("language") val language: String? = "en"
 )
 
 data class Telemetry(

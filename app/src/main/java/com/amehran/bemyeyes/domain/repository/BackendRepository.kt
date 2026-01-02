@@ -8,6 +8,7 @@ interface BackendRepository {
         imageBase64: String, 
         userIntent: String,
         telemetry: Telemetry?,
-        audioQuery: String? = null
+        audioQuery: String? = null,
+        language: String = "en"
     ): Result<SceneAnalysis>
 }
