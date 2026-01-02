@@ -20,12 +20,25 @@ class DescriberAgent(BaseAgent):
     """
     
     async def analyze(self, request: AnalysisRequest) -> AnalysisResponse:
-        current_prompt = self.SYSTEM_PROMPT
-        if request.audio_query:
-            current_prompt += f"\nIMPORTANT: The user asked using their voice: '{request.audio_query}'. \nAnswer their question directly based on the image."
-
+        print(f"DEBUG LANGUAGE: {request.language}") # Simple print for Cloud Run logs
+        
         if request.language and request.language.lower() == "fa":
-             current_prompt += "\nOUTPUT INSTRUCTION: The user speaks Persian (Farsi). Ensure the 'speech' field in the JSON response is written in natural, fluent Persian."
+             # Force Persian Persona
+             current_prompt = """
+             You are a helpful Visual Assistant for a blind user who speaks Persian (Farsi).
+             Describe the scene in fluent, natural Persian.
+             
+             Output strictly valid JSON:
+             {
+               "speech": "من یک اتاق نشیمن دنج با یک مبل چرمی قهوه ای در سمت چپ می بینم.",
+               "haptic": "INFO_PULSE"
+             }
+             """
+        else:
+             current_prompt = self.SYSTEM_PROMPT
+
+        if request.audio_query:
+            current_prompt += f"\nIMPORTANT: The user asked: '{request.audio_query}'."
 
         # Use simple Flash model. For V2 we might upgrade this to Pro.
         raw_response = await llm_gateway.generate_response(
