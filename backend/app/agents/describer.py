@@ -54,7 +54,7 @@ class DescriberAgent(BaseAgent):
             return AnalysisResponse(
                 agent_used="DescriberAgent",
                 actions=[
-                    Action(type="TTS", content=data.get("speech", "I see something but I'm not sure.")),
+                    Action(type="TTS", content=f"[DEBUG: {request.language}] " + data.get("speech", "I see something but I'm not sure.")),
                     Action(type="HAPTIC", content="INFO_PULSE")
                 ]
             )
