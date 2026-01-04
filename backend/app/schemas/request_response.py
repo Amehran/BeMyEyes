@@ -7,10 +7,11 @@ class Telemetry(BaseModel):
 
 class AnalysisRequest(BaseModel):
     image_base64: str
-    user_intent: Literal["AUTO", "NAVIGATION", "READING", "GENERAL"] = "AUTO"
+    user_intent: Literal["AUTO", "NAVIGATION", "READING", "GENERAL", "SEARCH"] = "AUTO"
     telemetry: Optional[Telemetry] = None
     audio_query: Optional[str] = None
     language: Optional[str] = "en"
+    looking_for: Optional[str] = None # For ObjectFinder Agent ("keys", "exit", etc.)
 
 class Action(BaseModel):
     type: Literal["TTS", "HAPTIC", "SETTING_UPDATE"]

@@ -9,6 +9,7 @@ interface BackendRepository {
         userIntent: String,
         telemetry: Telemetry?,
         audioQuery: String? = null,
-        language: String = "en"
+        language: String = "en",
+        lookingFor: String? = null
     ): Result<SceneAnalysis>
 }

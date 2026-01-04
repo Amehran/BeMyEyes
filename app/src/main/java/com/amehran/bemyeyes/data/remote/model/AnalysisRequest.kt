@@ -7,7 +7,8 @@ data class AnalysisRequest(
     @SerializedName("user_intent") val userIntent: String, // "AUTO", "NAVIGATION", "READING", "GENERAL"
     @SerializedName("telemetry") val telemetry: Telemetry? = null,
     @SerializedName("audio_query") val audioQuery: String? = null,
-    @SerializedName("language") val language: String? = "en"
+    @SerializedName("language") val language: String? = "en",
+    @SerializedName("looking_for") val lookingFor: String? = null
 )
 
 data class Telemetry(

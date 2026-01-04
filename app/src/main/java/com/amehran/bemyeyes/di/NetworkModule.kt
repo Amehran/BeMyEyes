@@ -40,7 +40,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        val BASE_URL = "https://bemyeyes-backend-xz4vizivoq-uc.a.run.app/" // Cloud Run URL
+        // val BASE_URL = "https://bemyeyes-backend-xz4vizivoq-uc.a.run.app/" // Cloud Run URL
+        // val BASE_URL = "http://10.0.2.2:8000/" // Local Emulator URL
+        val BASE_URL = "http://127.0.0.1:8000/" // ADB Reverse Tunnel
         // For safety we can trim and add it, or just trust the config.
         val baseUrl = if (BASE_URL.endsWith("/")) BASE_URL else "${BASE_URL}/"
         
