@@ -134,3 +134,19 @@ async def test_orchestrator_routes_to_awareness():
     # Assert
     assert response.agent_used == "AwarenessAgent"
     mock_awareness.analyze.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_orchestrator_voice_command_interception():
+    orchestrator = OrchestratorService()
+    
+    # Simulate "Switch to Outdoor Mode"
+    request = AnalysisRequest(
+        image_base64="dummy", 
+        audio_query="Switch to outdoor mode"
+    )
+    
+    response = await orchestrator.process_request(request)
+    
+    assert response.agent_used == "Orchestrator"
+    assert response.actions[0].type == "SETTING_UPDATE"
+    assert response.actions[0].content == "OUTDOOR=TRUE"

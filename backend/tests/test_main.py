@@ -7,9 +7,9 @@ client = TestClient(app)
 def test_health_check_endpoint():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"status": "active", "model": "gemini-1.5-flash"}
+    assert response.json() == {"message": "BeMyEyes Backend (V2 Farsi Support)"}
 
-@patch("app.main.orchestrator.process_request", new_callable=AsyncMock)
+@patch("app.api.v1.endpoints.analyze.orchestrator.process_request", new_callable=AsyncMock)
 def test_analyze_endpoint_success(mock_process):
     # Mock Orchestrator response
     from app.schemas.request_response import AnalysisResponse, Action
@@ -24,7 +24,8 @@ def test_analyze_endpoint_success(mock_process):
         "user_intent": "AUTO"
     }
     
-    response = client.post("/api/analyze", json=payload)
+    # Prefix is likely /api/v1 from settings.API_V1_STR
+    response = client.post("/api/v1/analyze", json=payload)
     
     assert response.status_code == 200
     data = response.json()
