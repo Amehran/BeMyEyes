@@ -92,3 +92,22 @@ async def test_indoor_navigation_agent_fast_speed():
         # Verify that prompt contains the Speed hint
         args, kwargs = mock_generate.call_args
         assert "User is moving fast" in kwargs["system_prompt"]
+
+@pytest.mark.asyncio
+async def test_reading_agent_ocr():
+    from app.agents.perception.reading import ReadingAgent
+    
+    mock_response = """
+    ```json
+    { "speech": "The sign says 'Open 24 Hours'.", "haptic": "INFO_PULSE" }
+    ```
+    """
+    with patch("app.agents.perception.reading.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate:
+        mock_generate.return_value = mock_response
+        agent = ReadingAgent()
+        
+        request = AnalysisRequest(image_base64="dummy", user_intent="READING")
+        response = await agent.analyze(request)
+        
+        assert response.agent_used == "ReadingAgent"
+        assert "Open 24 Hours" in response.actions[0].content
