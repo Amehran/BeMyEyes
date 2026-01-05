@@ -4,6 +4,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "BeMyEyes Backend"
     API_V1_STR: str = "/api/v1"
     GEMINI_API_KEY: str = "" # Provide via .env file or environment variable
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
 
     class Config:
         env_file = ".env"
