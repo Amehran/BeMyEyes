@@ -31,11 +31,12 @@
 
 ---
 
-## Phase 7: Live Mapping (SLAM Lite)
+## Phase 7: Live Mapping (SLAM Lite) **[LIVE]**
 **Goal:** Build a rough 2D mental map of the user's surroundings.
 
-*   [ ] **Telemetry:** Real-time stream of Compass/GPS/Accelerometer.
-*   [ ] **Backend:** `MapService` to plot objects on a relative grid (0,0 is user start).
+*   [x] **Telemetry:** Real-time stream of Compass (Heading) and Pitch.
+*   [x] **Backend:** `MapService` to calculate relative clock-face positions (e.g., "Door is at 9 o'clock").
+*   [x] **Awareness:** Injects compass data into LLM System Prompt.
 
 ## Phase 8: Social Intelligence
 **Goal:** Recognize faces and social cues.
