@@ -7,6 +7,7 @@ from app.agents.perception.reading import reading_agent
 from app.agents.perception.describer import describer_agent
 from app.agents.perception.detector import object_finder_agent
 from app.agents.perception.awareness import awareness_agent
+from app.agents.perception.social import social_agent
 
 class OrchestratorService:
     """
@@ -22,7 +23,9 @@ class OrchestratorService:
                  reading_agent_instance: BaseAgent = reading_agent,
                  describer_agent_instance: BaseAgent = describer_agent,
                  finder_agent_instance: BaseAgent = object_finder_agent,
-                 awareness_agent_instance: BaseAgent = awareness_agent):
+
+                 awareness_agent_instance: BaseAgent = awareness_agent,
+                 social_agent_instance: BaseAgent = social_agent):
         
         self.guardian = guardian_agent_instance
         self.indoor_agent = indoor_agent_instance
@@ -31,6 +34,7 @@ class OrchestratorService:
         self.describer_agent = describer_agent_instance
         self.finder_agent = finder_agent_instance
         self.awareness_agent = awareness_agent_instance
+        self.social_agent = social_agent_instance
         self.history = [] # Phase 5.2 Memory
 
 
@@ -137,6 +141,15 @@ class OrchestratorService:
             return await self._route_to_reading(request)
         elif request.user_intent == "SEARCH":
             return await self._route_to_finder(request)
+        elif request.user_intent == "SOCIAL":
+             return await self._route_to_social(request)
+
+        # 1.1 Implicit Intent (Voice)
+        if request.audio_query:
+            q = request.audio_query.lower()
+            if any(term in q for term in ["who", "face", "person", "people", "emotion", "feeling", "look like"]):
+                print(f"[Orchestrator] Social query detected: '{q}'. Routing to Social.")
+                return await self._route_to_social(request)
             
         # 2. Auto-Routing (Context)
         # If speed > 1.0 m/s -> Navigation
@@ -179,6 +192,9 @@ class OrchestratorService:
 
     async def _route_to_finder(self, request: AnalysisRequest) -> AnalysisResponse:
         return await self.finder_agent.analyze(request)
+
+    async def _route_to_social(self, request: AnalysisRequest) -> AnalysisResponse:
+        return await self.social_agent.analyze(request)
 
 # Singleton Instance
 orchestrator = OrchestratorService()

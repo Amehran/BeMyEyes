@@ -38,8 +38,9 @@
 *   [x] **Backend:** `MapService` to calculate relative clock-face positions (e.g., "Door is at 9 o'clock").
 *   [x] **Awareness:** Injects compass data into LLM System Prompt.
 
-## Phase 8: Social Intelligence
+## Phase 8: Social Intelligence **[LIVE]**
 **Goal:** Recognize faces and social cues.
 
-*   [ ] **Face DB:** "That is your brother."
-*   [ ] **Emotion Detection:** "He looks happy."
+*   [x] **Backend:** `SocialAgent` created.
+*   [x] **Emotion Detection:** Integrated via Gemini Multimodal.
+*   [x] **Recognition:** Uses descriptive comparisons against `MemoryService` to identify "Known People".

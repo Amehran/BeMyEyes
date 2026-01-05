@@ -135,7 +135,15 @@ Instead of a monolithic LLM, the backend utilizes an **Orchestrator-Worker** pat
 *   **Outdoor Agent:** Focuses on macro-navigation (Sidewalks, Poles, Intersections).
 *   **Skill:** Context switching based on visual scene classification.
 
-### 6. The Awareness Agent (Cognitive Persistence)
+### 7. The Social Agent (Emotional Intelligence)
+*   **Mission:** Identify people and emotions.
+*   **Logic:**
+    *   **Input:** Image + Memory (Descriptions of known people).
+    *   **Process:** Gemini Multimodal analysis with specific prompt for facial features and expressions.
+    *   **Recall:** Matches visual description against stored "Person" memories.
+    *   **Output:** "That looks like Alice, and she seems happy."
+
+### 8. The Awareness Agent (Cognitive Persistence)
 *   **Mission:** Long-Term Memory and Contextual Awareness.
 *   **Component:** `MemoryService` + `Supabase`.
 *   **Logic:**
