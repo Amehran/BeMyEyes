@@ -39,14 +39,25 @@ class AwarenessAgent(BaseAgent):
     """
 
     async def analyze(self, request: AnalysisRequest, history: list = []) -> AnalysisResponse:
-        # Build Context String
+        from app.services.memory import memory_service
+
+        # 1. Retrieve Long-Term Memory
+        user_id = request.user_id or "default_user"
+        query_text = request.audio_query or "Describe the surroundings"
+        
+        recalled_memories = await memory_service.search_memories(user_id, query_text)
+        memory_text = "No relevant past memories."
+        if recalled_memories:
+            memory_text = "\\n".join([f"- {m}" for m in recalled_memories])
+
+        # 2. Build Context String
         history_text = "No previous context."
         if history:
-            history_text = "\\n".join([f"- User: {h['query']}\\n  Agent: {h['response']}" for h in history[-3:]])
+            history_text = "\\n".join([f"- User: {h.get('query','?')}\\n  Agent: {h.get('response','')}" for h in history[-3:]])
         
-        full_prompt = f"{self.SYSTEM_PROMPT}\\n\\nPREVIOUS CONTEXT:\\n{history_text}"
+        full_prompt = f"{self.SYSTEM_PROMPT}\\n\\nLONG-TERM MEMORY:\\n{memory_text}\\n\\nPREVIOUS SESSION CONTEXT:\\n{history_text}"
 
-        # Step 1: Call LLM with the Spatial Prompt
+        # 3. Call LLM
         raw_response = await llm_gateway.generate_response(
             system_prompt=full_prompt,
             image_data=request.image_base64,
@@ -54,12 +65,16 @@ class AwarenessAgent(BaseAgent):
         )
         
         try:
-            # Step 2: Parse JSON
+            # 4. Parse JSON
             clean_json = raw_response.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_json)
             
-            # Step 3: Format the Output
+            # 5. Format Output & Store Memory
             summary_text = data.get("summary", "Scene analysis complete.")
+            
+            # Store this interaction as a memory
+            # We store the summary which contains the "facts"
+            await memory_service.store_memory(user_id, f"Context: {data.get('context')}. Detail: {summary_text}")
             
             return AnalysisResponse(
                 agent_used="AwarenessAgent",

@@ -12,6 +12,7 @@ class AnalysisRequest(BaseModel):
     audio_query: Optional[str] = None
     language: Optional[str] = "en"
     looking_for: Optional[str] = None # For ObjectFinder Agent ("keys", "exit", etc.)
+    user_id: Optional[str] = "default_user" # For Memory/Persistence
 
 class Action(BaseModel):
     type: Literal["TTS", "HAPTIC", "SETTING_UPDATE"]
