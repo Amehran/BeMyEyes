@@ -7,7 +7,7 @@ client = TestClient(app)
 def test_health_check_endpoint():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "BeMyEyes Backend (V2 Farsi Support)"}
+    assert response.json() == {"message": "BeMyEyes Backend (V2 Phase 6 - Memory Live)"}
 
 @patch("app.api.v1.endpoints.analyze.orchestrator.process_request", new_callable=AsyncMock)
 def test_analyze_endpoint_success(mock_process):
