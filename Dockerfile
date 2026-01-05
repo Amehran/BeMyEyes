@@ -25,4 +25,4 @@ ENV PORT 8080
 
 # Command to run the application using Uvicorn
 # "0.0.0.0" allows external access (required for Docker/Cloud Run)
-CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1
+CMD uvicorn app.main:app --host 0.0.0.0 --port 8080
