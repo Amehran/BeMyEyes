@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-      - feature/gcp-cloud-run-deploy # Allow testing on this branch too
+      - feature/gcp-cloud-run-deploy
+      - Mission-Driven-Agentic-System # Enable CI/CD on this branch
     paths:
       - 'backend/**'
       - 'Dockerfile'
