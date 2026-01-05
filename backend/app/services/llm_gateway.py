@@ -29,5 +29,19 @@ class LLMGateway:
         except Exception as e:
             logger.error(f"Gemini API Error: {e}")
             return "Thinking..." # Fallback or error re-raise
+
+    async def get_embedding(self, text: str) -> list[float]:
+        try:
+            # model="models/text-embedding-004" is optimized for retrieval
+            result = genai.embed_content(
+                model="models/text-embedding-004",
+                content=text,
+                task_type="retrieval_document",
+                title="Memory"
+            )
+            return result['embedding']
+        except Exception as e:
+            logger.error(f"Gemini Embedding Error: {e}")
+            return []
             
 llm_gateway = LLMGateway()
