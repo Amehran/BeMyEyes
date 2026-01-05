@@ -15,25 +15,30 @@ This project represents a paradigm shift in assistive technology for the visuall
 
 ## 2. High-Level Architecture (Hybrid AI)
 
+![System Architecture Diagram](assets/system_diagram.png)
+
 The system is distributed across two compute environments to optimize for **Latency**, **Privacy**, and **Intelligence**.
 
 ### A. The Edge Layer (Android/Kotlin)
-*Role: The Reflex System (Fast, Private, Offline-Capable)*
+*Role: The Distributor & Reflex System*
+*   **The Distributor (Input Processing):** Captures the CameraX stream and decides where to route the signal.
+    *   **Immediate Feedback (On-Device):** Low-latency path for Safety/Critical hazards.
+    *   **Cloud Pipeline:** High-latency path for complex reasoning.
 *   **Technology:** MediaPipe Tasks, CameraX (Zero-Copy Pipeline), Kotlin Coroutines.
 *   **Responsibility:**
     *   **Real-time Object Detection:** Running `EfficientDet-Lite2` at 30fps to track dynamic objects.
     *   **Temporal Smoothing:** Custom `DetectionTracker` to filter sensor noise and object flicker.
     *   **Immediate Haptics:** Vibration feedback for obstacles (0 latency).
     *   **Curtain Mode:** Privacy-first implementation (screen off, AI on) to preserve battery and dignity.
-*   **AI Engineering Highlight:** **Contextual Debouncing**. The system uses a state machine to prevent audio "chatter" (repetitive labeling) while ensuring new threats are announced immediately.
 
 ### B. The Cognitive Layer (Cloud Backend)
 *Role: The Reasoning System (Deep, Context-Aware, Multi-Modal)*
 *   **Technology:** Python, FastAPI, Google Cloud Run (Serverless), Google Gemini 1.5 Flash.
-*   **Responsibility:**
-    *   **Visual Question Answering (VQA):** Understanding complex scenes.
-    *   **Agentic Orchestration:** Routing intent to specialized sub-agents.
-    *   **Spatial Reasoning:** Converting 2D images into clock-face directional guidance.
+*   **Structure:**
+    1.  **Cloud Orchestrator Agent:** The entry point that creates the shared context.
+    2.  **Safety & Critical Path:** Parallel execution of Watchdog agents to catch missed local threats.
+    3.  **Mission Subgraph:** Specialized agents (Navigation, Object Detection, Reading) that execute complex tasks based on the "Nav Needed" logic.
+    4.  **Final Action Synthesizer:** Aggregates outputs from all agents to form a coherent response (Speech + Haptics).
 
 ---
 
