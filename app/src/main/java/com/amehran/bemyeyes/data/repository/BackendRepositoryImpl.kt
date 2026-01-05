@@ -17,7 +17,9 @@ class BackendRepositoryImpl @Inject constructor(
         imageBase64: String, 
         userIntent: String,
         telemetry: Telemetry?,
-        audioQuery: String?
+        audioQuery: String?,
+        language: String,
+        lookingFor: String?
     ): Result<SceneAnalysis> {
         return try {
             val response = api.analyzeImage(
@@ -25,7 +27,9 @@ class BackendRepositoryImpl @Inject constructor(
                     imageBase64 = imageBase64,
                     userIntent = userIntent,
                     telemetry = telemetry,
-                    audioQuery = audioQuery
+                    audioQuery = audioQuery,
+                    language = language,
+                    lookingFor = lookingFor
                 )
             )
             

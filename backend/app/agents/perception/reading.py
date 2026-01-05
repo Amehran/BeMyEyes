@@ -1,6 +1,6 @@
 from app.services.llm_gateway import llm_gateway
 from app.schemas.request_response import Action, AnalysisResponse, AnalysisRequest
-from app.agents.base import BaseAgent
+from app.agents.core.base import BaseAgent
 import json
 
 class ReadingAgent(BaseAgent):

@@ -212,7 +212,8 @@ class CameraViewModel @Inject constructor(
                         imageBase64 = base64Image,
                         userIntent = if (activeAudioQuery != null) "GENERAL" else "AUTO",
                         telemetry = telemetryData,
-                        audioQuery = activeAudioQuery
+                        audioQuery = activeAudioQuery,
+                        language = currentLanguageCode
                     )
                     
                     // Reset query after using it
@@ -228,6 +229,8 @@ class CameraViewModel @Inject constructor(
                                      android.util.Log.d("CameraViewModel", "Action TTS: ${action.content}")
                                      _lastDescription.value = action.content
                                      if (_isTtsEnabled.value) {
+                                         // Ensure TTS speaks in the correct language
+                                         textToSpeechManager.setLanguage(currentLanguageCode)
                                          textToSpeechManager.speak(action.content)
                                      }
                                  }
