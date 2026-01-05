@@ -24,3 +24,6 @@ build/
 .gradle/
 *.properties
 *.gradle.kts
+
+# Whitelist Backend Code (Ensure it's not ignored by 'app/' rule)
+!backend/app/
