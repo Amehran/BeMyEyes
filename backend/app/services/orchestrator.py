@@ -4,6 +4,7 @@ from app.agents.core.guardian import guardian_agent
 from app.agents.navigation.indoor import indoor_navigation_agent
 from app.agents.navigation.outdoor import outdoor_navigation_agent
 from app.agents.perception.reading import reading_agent
+from app.agents.perception.describer import describer_agent
 from app.agents.perception.awareness import awareness_agent
 
 class OrchestratorService:
