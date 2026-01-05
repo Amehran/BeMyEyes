@@ -55,7 +55,11 @@ class AwarenessAgent(BaseAgent):
         if history:
             history_text = "\\n".join([f"- User: {h.get('query','?')}\\n  Agent: {h.get('response','')}" for h in history[-3:]])
         
-        full_prompt = f"{self.SYSTEM_PROMPT}\\n\\nLONG-TERM MEMORY:\\n{memory_text}\\n\\nPREVIOUS SESSION CONTEXT:\\n{history_text}"
+        telemetry_info = ""
+        if request.telemetry:
+            telemetry_info = f"USER TELEMETRY: Heading={request.telemetry.heading} deg (0=North), Pitch={request.telemetry.pitch} deg."
+
+        full_prompt = f"{self.SYSTEM_PROMPT}\\n\\n{telemetry_info}\\n\\nLONG-TERM MEMORY:\\n{memory_text}\\n\\nPREVIOUS SESSION CONTEXT:\\n{history_text}"
 
         # 3. Call LLM
         raw_response = await llm_gateway.generate_response(

@@ -4,6 +4,8 @@ from typing import Optional, List, Literal
 class Telemetry(BaseModel):
     speed_mps: Optional[float] = 0.0
     location_type: Optional[str] = "UNKNOWN" # INDOOR / OUTDOOR
+    heading: Optional[float] = 0.0 # 0-360 degrees (North=0)
+    pitch: Optional[float] = 0.0 # -90 (Down) to +90 (Up)
 
 class AnalysisRequest(BaseModel):
     image_base64: str
