@@ -7,10 +7,12 @@ import com.amehran.bemyeyes.domain.model.ActionType
 import com.amehran.bemyeyes.domain.model.SceneAction
 import com.amehran.bemyeyes.domain.model.SceneAnalysis
 import com.amehran.bemyeyes.domain.repository.BackendRepository
+import com.amehran.bemyeyes.data.local.UserPreferences
 import javax.inject.Inject
 
 class BackendRepositoryImpl @Inject constructor(
-    private val api: BeMyEyesApi
+    private val api: BeMyEyesApi,
+    private val userPreferences: UserPreferences
 ) : BackendRepository {
 
     override suspend fun analyzeImage(
@@ -29,7 +31,8 @@ class BackendRepositoryImpl @Inject constructor(
                     telemetry = telemetry,
                     audioQuery = audioQuery,
                     language = language,
-                    lookingFor = lookingFor
+                    lookingFor = lookingFor,
+                    userId = userPreferences.getUserId()
                 )
             )
             
