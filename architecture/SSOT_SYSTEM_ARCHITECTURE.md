@@ -15,7 +15,60 @@ This project represents a paradigm shift in assistive technology for the visuall
 
 ## 2. High-Level Architecture (Hybrid AI)
 
-![System Architecture Diagram](assets/system_diagram.png)
+## 2. High-Level Architecture (Hybrid AI)
+
+```mermaid
+graph LR
+    subgraph Edge ["📱 Mobile Edge (Android)"]
+        direction TB
+        
+        %% Input Pipeline
+        Camera[CameraX] -->|"Zero-Copy (ImageProxy)"| Executor{Async Executor}
+        
+        %% Local Inference Engine
+        subgraph LocalAI ["⚡ On-Device Inference (TFLite/MediaPipe)"]
+            Executor -->|"Bitmap"| MediaPipe[MediaPipe Object Detector]
+            MediaPipe -->|"Raw Detections"| Tracker[DetectionTracker\n(Temporal Smoothing)]
+            Tracker -->|"Stable Objects"| StateManager[Context State Manager]
+        end
+        
+        %% Outputs
+        StateManager -->|"Danger! (<50ms)"| Haptics((Haptic Feedback))
+        StateManager -->|"Nav Hint"| TTS((Local TTS))
+        
+        %% Network Bridge
+        StateManager -.->|"Intent + Image"| Network[Retrofit Client]
+    end
+
+    subgraph Cloud ["☁️ Cloud Cognitive Layer"]
+        Network ==>|"REST/JSON (>1s)"| Orchestrator{Orchestrator Agent}
+        
+        %% Cloud Agents
+        subgraph Agents ["🤖 Agent Swarm"]
+            Orchestrator --> Guardian[Guardian Watchdog]
+            Orchestrator --> Finder[Object Finder]
+            Orchestrator --> Nav[Navigation Agent]
+            Orchestrator --> Awareness[Awareness/Memory]
+        end
+        
+        %% Synthesis
+        Agents --> Synthesizer[Response Synthesizer]
+    end
+
+    %% Closed Loop
+    Synthesizer ==>|"Instructions"| TTS
+    
+    %% Styling
+    classDef edge fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef ai fill:#fff3e0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef cloud fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef critical fill:#ffebee,stroke:#c62828,stroke-width:2px;
+
+    class Camera,Executor,StateManager,Network edge;
+    class MediaPipe,Tracker ai;
+    class Orchestrator,Finder,Nav,Awareness,Synthesizer cloud;
+    class Guardian,Haptics critical;
+```
 
 The system is distributed across two compute environments to optimize for **Latency**, **Privacy**, and **Intelligence**.
 
