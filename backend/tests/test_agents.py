@@ -68,3 +68,27 @@ async def test_object_finder_agent_search():
         mock_generate.assert_called_once()
         args, kwargs = mock_generate.call_args
         assert "keys" in kwargs["system_prompt"] # Check system prompt contains target
+
+@pytest.mark.asyncio
+async def test_indoor_navigation_agent_fast_speed():
+    mock_response = """
+    ```json
+    { "speech": "STOP. Wall.", "haptic": "STOP_ALARM" }
+    ```
+    """
+    with patch("app.agents.navigation.indoor.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate:
+        mock_generate.return_value = mock_response
+        agent = IndoorNavigationAgent()
+        
+        # User moving > 1.0 mps
+        request = AnalysisRequest(
+            image_base64="dummy", 
+            telemetry=Telemetry(speed_mps=1.5, location_type="INDOOR")
+        )
+        response = await agent.analyze(request)
+        
+        assert response.agent_used == "IndoorNavigationAgent"
+        
+        # Verify that prompt contains the Speed hint
+        args, kwargs = mock_generate.call_args
+        assert "User is moving fast" in kwargs["system_prompt"]

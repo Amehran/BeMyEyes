@@ -100,3 +100,37 @@ async def test_orchestrator_implicit_search_routing():
     # Assert
     assert response == "FINDER_RESPONSE"
     mock_finder.analyze.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_orchestrator_routes_to_awareness():
+    # Arrange
+    from app.schemas.request_response import AnalysisResponse, Action
+    
+    mock_guardian = AsyncMock()
+    mock_guardian.analyze.return_value = None
+    
+    mock_awareness = AsyncMock()
+    # Return a valid AnalysisResponse object
+    mock_awareness.analyze.return_value = AnalysisResponse(
+        agent_used="AwarenessAgent",
+        actions=[Action(type="TTS", content="Room described.")]
+    )
+    
+    orchestrator = OrchestratorService(
+        guardian_agent_instance=mock_guardian,
+        awareness_agent_instance=mock_awareness
+    )
+    
+    # Intent is GENERAL, query is descriptive
+    request = AnalysisRequest(
+        image_base64="dummy", 
+        user_intent="GENERAL", 
+        audio_query="Describe the room"
+    )
+    
+    # Act
+    response = await orchestrator.process_request(request)
+    
+    # Assert
+    assert response.agent_used == "AwarenessAgent"
+    mock_awareness.analyze.assert_called_once()
