@@ -15,8 +15,6 @@ This project represents a paradigm shift in assistive technology for the visuall
 
 ## 2. High-Level Architecture (Hybrid AI)
 
-## 2. High-Level Architecture (Hybrid AI)
-
 ```mermaid
 graph LR
     subgraph Edge ["📱 Mobile Edge (Android)"]
@@ -28,7 +26,7 @@ graph LR
         %% Local Inference Engine
         subgraph LocalAI ["⚡ On-Device Inference (TFLite/MediaPipe)"]
             Executor -->|"Bitmap"| MediaPipe[MediaPipe Object Detector]
-            MediaPipe -->|"Raw Detections"| Tracker[DetectionTracker\n(Temporal Smoothing)]
+            MediaPipe -->|"Raw Detections"| Tracker["DetectionTracker<br/>(Temporal Smoothing)"]
             Tracker -->|"Stable Objects"| StateManager[Context State Manager]
         end
         
