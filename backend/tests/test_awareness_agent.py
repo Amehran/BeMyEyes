@@ -26,8 +26,12 @@ async def test_awareness_agent_spatial_response():
     ```
     """
     
-    with patch("app.services.llm_gateway.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate:
+    with patch("app.services.llm_gateway.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate, \
+         patch("app.services.memory.memory_service.search_memories", new_callable=AsyncMock) as mock_search, \
+         patch("app.services.memory.memory_service.store_memory", new_callable=AsyncMock) as mock_store:
+        
         mock_generate.return_value = mock_json_response
+        mock_search.return_value = ["Memory: Keys on desk"]
         
         # ACT
         response = await awareness_agent.analyze(request)
@@ -37,14 +41,22 @@ async def test_awareness_agent_spatial_response():
         assert len(response.actions) == 1
         assert response.actions[0].type == "TTS"
         assert "Sofa is straight ahead" in response.actions[0].content
+        
+        # Verify Memory Interactions
+        mock_search.assert_awaited()
+        mock_store.assert_awaited()
 
 @pytest.mark.asyncio
 async def test_awareness_agent_parsing_failure():
     # Test Robustness against bad LLM output
     request = AnalysisRequest(image_base64="data")
     
-    with patch("app.services.llm_gateway.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate:
+    with patch("app.services.llm_gateway.llm_gateway.generate_response", new_callable=AsyncMock) as mock_generate, \
+         patch("app.services.memory.memory_service.search_memories", new_callable=AsyncMock) as mock_search, \
+         patch("app.services.memory.memory_service.store_memory", new_callable=AsyncMock) as mock_store:
+
         mock_generate.return_value = "Not JSON"
+        mock_search.return_value = []
         
         response = await awareness_agent.analyze(request)
         
