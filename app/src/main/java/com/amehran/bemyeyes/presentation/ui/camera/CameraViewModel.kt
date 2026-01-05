@@ -22,11 +22,16 @@ class CameraViewModel @Inject constructor(
     private val detectionTracker: com.amehran.bemyeyes.domain.tracker.DetectionTracker,
     private val sceneDescriber: com.amehran.bemyeyes.domain.describer.SceneDescriber,
     private val backendRepository: com.amehran.bemyeyes.domain.repository.BackendRepository,
-    private val deviceInterpreter: com.amehran.bemyeyes.data.interpreter.OnDeviceGeminiInterpreter
+    private val deviceInterpreter: com.amehran.bemyeyes.data.interpreter.OnDeviceGeminiInterpreter,
+    private val orientationManager: com.amehran.bemyeyes.domain.repository.OrientationManager
 ) : ViewModel() {
 
     private val _detections = MutableStateFlow<List<Detection>>(emptyList())
     val detections = _detections.asStateFlow()
+
+    init {
+        orientationManager.start()
+    }
 
     private val _isListening = MutableStateFlow(false)
     val isListening = _isListening.asStateFlow()
@@ -203,9 +208,15 @@ class CameraViewModel @Inject constructor(
                     android.util.Log.d("CameraViewModel", "Sending Image to Backend...")
                     
                     val locationType = if (isOutdoorMode.value) "OUTDOOR" else "INDOOR"
+                    
+                    // PHASE 7: Live Telemetry
+                    val currentOrientation = orientationManager.orientation.value
+                    
                     val telemetryData = com.amehran.bemyeyes.data.remote.model.Telemetry(
                         speedMps = 0.0,
-                        locationType = locationType
+                        locationType = locationType,
+                        heading = currentOrientation.azimuth.toDouble(),
+                        pitch = currentOrientation.pitch.toDouble()
                     )
 
                     val result = backendRepository.analyzeImage(
@@ -380,5 +391,6 @@ class CameraViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         textToSpeechManager.shutdown()
+        orientationManager.stop()
     }
 }

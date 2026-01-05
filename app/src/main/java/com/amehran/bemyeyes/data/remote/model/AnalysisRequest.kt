@@ -14,5 +14,7 @@ data class AnalysisRequest(
 
 data class Telemetry(
     @SerializedName("speed_mps") val speedMps: Double,
-    @SerializedName("location_type") val locationType: String // "INDOOR", "OUTDOOR", "UNKNOWN"
+    @SerializedName("location_type") val locationType: String, // "INDOOR", "OUTDOOR", "UNKNOWN"
+    @SerializedName("heading") val heading: Double = 0.0,
+    @SerializedName("pitch") val pitch: Double = 0.0
 )

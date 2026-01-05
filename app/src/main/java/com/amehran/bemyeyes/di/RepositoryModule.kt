@@ -17,4 +17,10 @@ abstract class RepositoryModule {
     abstract fun bindBackendRepository(
         backendRepositoryImpl: BackendRepositoryImpl
     ): BackendRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOrientationManager(
+        orientationManagerImpl: com.amehran.bemyeyes.data.repository.OrientationManagerImpl
+    ): com.amehran.bemyeyes.domain.repository.OrientationManager
 }
