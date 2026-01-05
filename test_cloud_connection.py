@@ -18,6 +18,7 @@ payload = {
         "speed_mps": 0.0,
         "location_type": "INDOOR"
     },
+    "language": "fa",
     "audio_query": "Describe this test image."
 }
 

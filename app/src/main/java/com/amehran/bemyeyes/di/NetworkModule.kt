@@ -41,7 +41,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         val BASE_URL = "https://bemyeyes-backend-xz4vizivoq-uc.a.run.app/" // Cloud Run URL
-        // For safety we can trim and add it, or just trust the config.
+        // val BASE_URL = "http://127.0.0.1:8000/" // Local Debug URL
         val baseUrl = if (BASE_URL.endsWith("/")) BASE_URL else "${BASE_URL}/"
         
         return Retrofit.Builder()

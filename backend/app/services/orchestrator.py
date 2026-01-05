@@ -1,8 +1,12 @@
 from app.schemas.request_response import AnalysisRequest, AnalysisResponse, Action
-from app.agents.base import BaseAgent
-from app.agents.navigation import navigation_agent
-from app.agents.reading import reading_agent
-from app.agents.describer import describer_agent
+from app.agents.core.base import BaseAgent
+from app.agents.core.guardian import guardian_agent
+from app.agents.navigation.indoor import indoor_navigation_agent
+from app.agents.navigation.outdoor import outdoor_navigation_agent
+from app.agents.perception.reading import reading_agent
+from app.agents.perception.describer import describer_agent
+from app.agents.perception.detector import object_finder_agent
+from app.agents.perception.awareness import awareness_agent
 
 class OrchestratorService:
     """
@@ -12,17 +16,35 @@ class OrchestratorService:
     """
     
     def __init__(self, 
-                 navigation_agent_instance: BaseAgent = navigation_agent,
+                 guardian_agent_instance: BaseAgent = guardian_agent,
+                 indoor_agent_instance: BaseAgent = indoor_navigation_agent,
+                 outdoor_agent_instance: BaseAgent = outdoor_navigation_agent,
                  reading_agent_instance: BaseAgent = reading_agent,
-                 describer_agent_instance: BaseAgent = describer_agent):
+                 describer_agent_instance: BaseAgent = describer_agent,
+                 finder_agent_instance: BaseAgent = object_finder_agent,
+                 awareness_agent_instance: BaseAgent = awareness_agent):
         
-        self.navigation_agent = navigation_agent_instance
+        self.guardian = guardian_agent_instance
+        self.indoor_agent = indoor_agent_instance
+        self.outdoor_agent = outdoor_agent_instance
         self.reading_agent = reading_agent_instance
         self.describer_agent = describer_agent_instance
+        self.finder_agent = finder_agent_instance
+        self.awareness_agent = awareness_agent_instance
+        self.history = [] # Phase 5.2 Memory
+
+
+
 
     async def process_request(self, request: AnalysisRequest) -> AnalysisResponse:
         print(f"[Orchestrator] Processing Intent: {request.user_intent}")
         
+        # -1. Guardian Check (Safety Layer) - ALWAYS RUNS
+        danger_response = await self.guardian.analyze(request)
+        if danger_response:
+             print("[Orchestrator] GUARDIAN INTERVENTION! Danger Detected.")
+             return danger_response
+
         # 0. Voice Command Interception
         if request.audio_query:
             q = request.audio_query.lower()
@@ -50,7 +72,6 @@ class OrchestratorService:
                 )
 
             # Check for TTS / Screen Reader
-            # Enable Screen Reader -> App Silent (TTS OFF)
             if "screen reader" in q and ("enable" in q or "on" in q or "start" in q):
                  return AnalysisResponse(
                     agent_used="Orchestrator",
@@ -59,7 +80,6 @@ class OrchestratorService:
                         Action(type="TTS", content="Turning off app voice. Screen reader mode enabled.")
                     ]
                 )
-            # Disable Screen Reader -> App Voice ON (TTS ON)
             if "screen reader" in q and ("disable" in q or "off" in q or "stop" in q):
                  return AnalysisResponse(
                     agent_used="Orchestrator",
@@ -68,7 +88,8 @@ class OrchestratorService:
                         Action(type="TTS", content="Turning on app voice. Screen reader mode disabled.")
                     ]
                 )
-
+            
+            # Check for generic TTS toggle
             if any(term in q for term in ["tts", "voice feedback", "speech"]) and any(word in q for word in ["off", "disable", "stop"]):
                  return AnalysisResponse(
                     agent_used="Orchestrator",
@@ -103,29 +124,61 @@ class OrchestratorService:
                         Action(type="TTS", content="Realtime object detection started.")
                     ]
                 )
+
+            # Check for Search Intent (Implicit)
+            if any(term in q for term in ["find", "where", "locate", "search", "looking for"]):
+                 print(f"[Orchestrator] Search query detected: '{q}'. Routing to Finder.")
+                 return await self._route_to_finder(request)
         
         # 1. Direct Intent Routing
         if request.user_intent == "NAVIGATION":
             return await self._route_to_navigation(request)
         elif request.user_intent == "READING":
             return await self._route_to_reading(request)
+        elif request.user_intent == "SEARCH":
+            return await self._route_to_finder(request)
             
         # 2. Auto-Routing (Context)
+        # If speed > 1.0 m/s -> Navigation
         if request.telemetry and request.telemetry.speed_mps > 1.0:
             print("[Orchestrator] High speed detected. Auto-routing to Navigation.")
             return await self._route_to_navigation(request)
+
+        # If Looking For is set, but intent wasn't explicitly SEARCH -> Finder
+        if request.looking_for:
+             return await self._route_to_finder(request)
             
         # 3. Default Fallback
         return await self._route_to_describer(request)
 
     async def _route_to_navigation(self, request: AnalysisRequest) -> AnalysisResponse:
-        return await self.navigation_agent.analyze(request)
+        # Smart Switching based on Telemetry
+        if request.telemetry and request.telemetry.location_type == "OUTDOOR":
+            print("[Orchestrator] Routing to OUTDOOR Agent.")
+            return await self.outdoor_agent.analyze(request)
+        else:
+            # Default to Indoor for safety if Unknown or explicitly Indoor
+            print("[Orchestrator] Routing to INDOOR Agent.")
+            return await self.indoor_agent.analyze(request)
 
     async def _route_to_reading(self, request: AnalysisRequest) -> AnalysisResponse:
         return await self.reading_agent.analyze(request)
 
     async def _route_to_describer(self, request: AnalysisRequest) -> AnalysisResponse:
-        return await self.describer_agent.analyze(request)
+        # UPGRADE: Phase 5 - Use Awareness Agent instead of basic Describer
+        # UPGRADE: Phase 5 - Use Awareness Agent with Memory
+        print("[Orchestrator] Routing to AWARENESS Agent (Phase 5).")
+        response = await self.awareness_agent.analyze(request, history=self.history)
+        
+        # Update History
+        query = request.audio_query or "Describe scene"
+        if response and response.actions and response.actions[0].type == "TTS":
+             self.history.append({"query": query, "response": response.actions[0].content})
+             
+        return response
+
+    async def _route_to_finder(self, request: AnalysisRequest) -> AnalysisResponse:
+        return await self.finder_agent.analyze(request)
 
 # Singleton Instance
 orchestrator = OrchestratorService()
